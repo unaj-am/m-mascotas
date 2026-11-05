@@ -147,3 +147,41 @@ vite.config.ts.timestamp-*
 
 # Turbo Repo
 .turbo
+
+# Expo y salidas locales
+.expo/
+expo-env.d.ts
+/android/
+/ios/
+firebase-debug.log
+firestore-debug.log
+ui-debug.log
+# Configuración Firebase local (sin credenciales en Git)
+google-services.json
+GoogleService-Info.plist
+
+# Configuracion personal del IDE
+.idea/
+
+# Herramientas y notas locales de asistentes de IA
+.codex/
+.agents/
+.claude/
+.cursor/
+.continue/
+.aider*
+AGENTS.md
+CLAUDE.md
+GEMINI.md
+.github/copilot-instructions.md
+.github/instructions/
+.github/prompts/
+
+# Documentacion de trabajo y guias locales
+/docs/
+README.md
+
+# Scripts auxiliares locales; conservar los requeridos por package.json
+/scripts/*
+!/scripts/check-architecture.mjs
+!/scripts/check-firebase-config.cjs

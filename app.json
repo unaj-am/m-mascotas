@@ -1,0 +1,37 @@
+{
+    "expo":  {
+                 "name":  "Mascotas",
+                 "slug":  "m-mascotas",
+                 "version":  "0.1.0",
+                 "scheme":  "mascotas",
+                 "orientation":  "portrait",
+                 "userInterfaceStyle":  "automatic",
+                 "platforms":  [
+                                   "android",
+                                   "web"
+                               ],
+                 "plugins":  [
+                                 "expo-router",
+                                 "expo-dev-client",
+                                 "@react-native-firebase/app",
+                                 "@react-native-firebase/auth",
+                                 [
+                                     "expo-build-properties",
+                                     {
+                                         "android":  {
+                                                         "kotlinVersion":  "2.4.0"
+                                                     }
+                                     }
+                                 ],
+                                 "./plugins/with-windows-cmake.cjs",
+                                 "./plugins/with-firebase-turbo-packages.cjs"
+                             ],
+                 "android":  {
+                                 "package":  "com.app.mascotas",
+                                 "googleServicesFile":  "./google-services.json"
+                             },
+                 "web":  {
+                             "output":  "single"
+                         }
+             }
+}
