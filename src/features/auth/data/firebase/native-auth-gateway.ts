@@ -2,8 +2,9 @@ import { getApp } from '@react-native-firebase/app';
 import {
   getAuth, onAuthStateChanged, reload, signInWithEmailAndPassword, signOut as firebaseSignOut,
   sendPasswordResetEmail, sendEmailVerification, getIdToken,
+  createUserWithEmailAndPassword, deleteUser,
 } from '@react-native-firebase/auth';
-import { getFirestore, doc, getDocFromServer, onSnapshot } from '@react-native-firebase/firestore';
+import { getFirestore, doc, getDocFromServer, onSnapshot, runTransaction } from '@react-native-firebase/firestore';
 import type { AuthIdentity, FirebaseAuthGateway } from '../datasources/firebase-auth-gateway';
 
 export function createNativeAuthGateway(): FirebaseAuthGateway {
@@ -36,6 +37,24 @@ export function createNativeAuthGateway(): FirebaseAuthGateway {
       }, error);
     },
     async signIn(email, password) { await signInWithEmailAndPassword(auth, email, password); },
+    async createAccount(email, password) {
+      const credential = await createUserWithEmailAndPassword(auth, email, password);
+      return { uid: credential.user.uid, email: credential.user.email, emailVerified: credential.user.emailVerified };
+    },
+    async createRegistrationProfile(uid, profile) {
+      if (auth.currentUser?.uid !== uid) throw { code: 'auth/invalid-credential' };
+      const reference = doc(db, 'users', uid);
+      await runTransaction(db, async (transaction) => {
+        const existing = await transaction.get(reference);
+        if (existing.exists()) throw { code: 'registration/profile-exists' };
+        transaction.set(reference, profile);
+      });
+    },
+    async deleteAccount(uid) {
+      const user = auth.currentUser;
+      if (!user || user.uid !== uid) throw { code: 'auth/invalid-credential' };
+      await deleteUser(user);
+    },
     async signOut() {
       try { await firebaseSignOut(auth); }
       catch (error) {

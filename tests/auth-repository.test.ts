@@ -9,6 +9,7 @@ it('el repositorio de Auth transforma DTOs y permite cancelar la suscripción', 
   const source: AuthDataSource = {
     subscribe(observer) { observer(success({ kind: 'unverified', uid: 'u1', email: 'a@example.com' })); return () => { stopped = true; }; },
     async signIn() { return success(undefined); },
+    async register(details) { return success({ email: details.email, verificationEmailSent: true }); },
     async signOut() { return success(undefined); },
     async refreshSession() { return success(undefined); },
     async sendPasswordReset() { return success(undefined); },

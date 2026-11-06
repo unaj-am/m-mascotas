@@ -5,12 +5,13 @@ Aplicación para la gestión de mascotas y paseos, con perfiles de dueño y pase
 ## Funcionalidades
 
 - Inicio de sesión con correo y contraseña mediante Firebase Authentication.
+- Registro de cuentas de dueño o paseador, con creación del perfil en Firestore.
 - Recuperación de contraseña y verificación de correo electrónico.
 - Acceso a paneles según el rol: dueño (`OWNER`) o paseador (`WALKER`).
 - Persistencia y cierre de sesión.
 - Validación del perfil y del estado de la cuenta en Firestore.
 
-El proyecto se encuentra en desarrollo. El registro de cuentas, la gestión de mascotas, las solicitudes de paseo, el seguimiento y las notificaciones están pendientes de implementación.
+El proyecto se encuentra en desarrollo. La gestión de mascotas, las solicitudes de paseo, el seguimiento y las notificaciones están pendientes de implementación.
 
 ## Tecnologías
 
@@ -48,6 +49,10 @@ EXPO_PUBLIC_FIREBASE_WEB_APP_ID=
 
 El acceso utiliza el proyecto `mascotas-5d228`. Cada cuenta debe tener un documento `users/{uid}` con rol `OWNER` o `WALKER`. Las cuentas con `active: false` no pueden acceder a los paneles.
 
+El registro solicita nombre, apellido, teléfono, correo, contraseña y tipo de cuenta. Después de crear el perfil envía el correo de verificación; el acceso al panel requiere confirmar esa dirección. Si falla el envío, la cuenta se conserva y permite reenviar el correo.
+
+Las reglas de Firestore deben permitir a cada cuenta nueva consultar y crear su propio documento `users/{uid}` antes de verificar el correo, validando los campos y el rol. Las operaciones de negocio pueden exigir el correo verificado. El registro no modifica las reglas del proyecto ni habilita Cloud Functions.
+
 ## Ejecución
 
 ### Android
@@ -75,7 +80,6 @@ La aplicación requiere una compilación de desarrollo con los módulos nativos 
 ### Web
 
 ```bash
-npm run check:firebase:web
 npm run web
 ```
 
@@ -115,4 +119,4 @@ src/
 npm run check
 ```
 
-Ejecuta la comprobación de tipos, las reglas de dependencias entre capas y las pruebas automatizadas.
+Ejecuta la comprobación de tipos y las pruebas automatizadas.

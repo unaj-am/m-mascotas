@@ -4,18 +4,23 @@ import type { AuthDataSource, AuthSessionDto } from './auth-data-source';
 import type { AuthIdentity, FirebaseAuthGateway } from './firebase-auth-gateway';
 import { authFailure } from '../mappers/auth-error-mapper';
 import { profileSession } from '../mappers/profile-session-mapper';
+import { registerFirebaseUser } from './firebase-registration';
 
 export function createFirebaseAuthDataSource(gateway: FirebaseAuthGateway): AuthDataSource {
   const observers = new Set<Observer<AuthSessionDto>>();
   let authSubscription: Unsubscribe | undefined;
   let profileSubscription: Unsubscribe | undefined;
   let version = 0;
+  let registering = false;
+  let signingIn = false;
   let latest: Result<AuthSessionDto> = success({ kind: 'loading' });
   function emit(value: Result<AuthSessionDto>) {
     latest = value;
     for (const observer of observers) observer(value);
   }
   async function validate(identity: AuthIdentity | null): Promise<Result<void>> {
+    // createUser autentica automáticamente: esperar a que termine el perfil.
+    if (registering) return success(undefined);
     const current = ++version;
     profileSubscription?.();
     profileSubscription = undefined;
@@ -71,8 +76,27 @@ export function createFirebaseAuthDataSource(gateway: FirebaseAuthGateway): Auth
         }
       };
     },
-    signIn: ({ email, password }) => perform(() => gateway.signIn(email, password)),
+    async signIn({ email, password }) {
+      if (registering || signingIn) return failure('unavailable', 'Esperá a que termine la operación actual.');
+      signingIn = true;
+      try { return await perform(() => gateway.signIn(email, password)); }
+      finally { signingIn = false; }
+    },
+    async register(details) {
+      if (registering || signingIn) return failure('unavailable', 'Esperá a que termine la operación actual.');
+      if (gateway.currentUser()) return failure('conflict', 'Cerrá la sesión actual antes de crear otra cuenta.');
+      registering = true;
+      ++version;
+      profileSubscription?.();
+      profileSubscription = undefined;
+      try { return await registerFirebaseUser(gateway, details); }
+      finally {
+        registering = false;
+        await validate(gateway.currentUser());
+      }
+    },
     async signOut() {
+      if (registering) return failure('unavailable', 'Esperá a que termine el registro.');
       let result: Result<void>;
       let timeout: ReturnType<typeof setTimeout> | undefined;
       try {

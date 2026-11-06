@@ -29,6 +29,8 @@ function fixture(initial: AuthIdentity | null = user()) {
     async getProfileFromServer(uid) { profileReads++; return profiles.get(uid) ?? null; },
     observeProfile(_uid, listener) { profileListener = listener; return () => { profileStops++; }; },
     async signIn() {}, async signOut() { current = null; authListener(null); },
+    async createAccount() { throw new Error('Registro no utilizado en esta prueba.'); },
+    async createRegistrationProfile() {}, async deleteAccount() {},
     async sendPasswordReset() {}, async sendVerificationEmail() {},
   };
   const source = createFirebaseAuthDataSource(gateway);

@@ -16,6 +16,7 @@ function Routes() {
     <Stack.Protected guard={!authenticated}>
       <Stack.Screen name="(auth)/sign-in" />
       <Stack.Screen name="(auth)/reset-password" />
+      <Stack.Screen name="(auth)/register" />
     </Stack.Protected>
     <Stack.Protected guard={authenticated && session.role === 'OWNER'}><Stack.Screen name="(owner)/home" /></Stack.Protected>
     <Stack.Protected guard={authenticated && session.role === 'WALKER'}><Stack.Screen name="(walker)/dashboard" /></Stack.Protected>

@@ -2,8 +2,9 @@ import { getApps, initializeApp } from 'firebase/app';
 import {
   getAuth, onAuthStateChanged, reload, getIdToken, signInWithEmailAndPassword, signOut,
   sendPasswordResetEmail, sendEmailVerification, type User,
+  createUserWithEmailAndPassword, deleteUser,
 } from 'firebase/auth';
-import { getFirestore, doc, getDocFromServer, onSnapshot } from 'firebase/firestore';
+import { getFirestore, doc, getDocFromServer, onSnapshot, runTransaction } from 'firebase/firestore';
 import type { AuthIdentity, FirebaseAuthGateway } from '../datasources/firebase-auth-gateway';
 import { FirebaseConfigurationError, readWebFirebaseConfig } from '../../../../core/firebase/web-firebase-config';
 
@@ -46,6 +47,24 @@ export function createWebAuthGateway(): FirebaseAuthGateway {
       }, error);
     },
     async signIn(email, password) { await signInWithEmailAndPassword(auth, email, password); },
+    async createAccount(email, password) {
+      const credential = await createUserWithEmailAndPassword(auth, email, password);
+      return { uid: credential.user.uid, email: credential.user.email, emailVerified: credential.user.emailVerified };
+    },
+    async createRegistrationProfile(uid, profile) {
+      if (auth.currentUser?.uid !== uid) throw { code: 'auth/invalid-credential' };
+      const reference = doc(db, 'users', uid);
+      await runTransaction(db, async (transaction) => {
+        const existing = await transaction.get(reference);
+        if (existing.exists()) throw { code: 'registration/profile-exists' };
+        transaction.set(reference, profile);
+      });
+    },
+    async deleteAccount(uid) {
+      const user = auth.currentUser;
+      if (!user || user.uid !== uid) throw { code: 'auth/invalid-credential' };
+      await deleteUser(user);
+    },
     async signOut() { await signOut(auth); },
     async sendPasswordReset(email) {
       try { await sendPasswordResetEmail(auth, email); }
