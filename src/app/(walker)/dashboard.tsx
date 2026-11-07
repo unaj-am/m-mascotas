@@ -1,1 +1,1 @@
-export { AccountScreen as default } from '../../features/auth/presentation/screens/account-screen';
+export { WalkerHomeScreen as default } from '../../features/home/presentation/screens/walker-home-screen';

@@ -1,5 +1,5 @@
 import { createStore } from 'zustand/vanilla';
-import type { Session } from '../../domain/entities/session';
+import type { Session } from '../../../../core/domain/entities/session';
 import type { AppError } from '../../../../shared/types/result';
 
 export type SessionState =

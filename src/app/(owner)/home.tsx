@@ -1,1 +1,1 @@
-export { AccountScreen as default } from '../../features/auth/presentation/screens/account-screen';
+export { OwnerHomeScreen as default } from '../../features/home/presentation/screens/owner-home-screen';

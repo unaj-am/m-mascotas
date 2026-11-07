@@ -8,7 +8,7 @@ export function useAuthOperation() {
   const running = useRef(false);
   const mounted = useRef(true);
   useEffect(() => { mounted.current = true; return () => { mounted.current = false; }; }, []);
-  const run = useCallback(async (work: () => Promise<Result<void>>, successMessage: string | null = null) => {
+  const run = useCallback(async <T,>(work: () => Promise<Result<T>>, successMessage: string | null = null) => {
     if (running.current) return false;
     running.current = true;
     setBusy(true); setMessage(null); setIsError(false);

@@ -30,5 +30,6 @@ export function LoginScreen() {
     <ActionButton title={operation.busy ? 'Ingresando…' : 'Iniciar sesión'} onPress={() => { void submit(); }}
       busy={operation.busy} disabled={!auth || !email.trim() || !password} />
     <Link href="/(auth)/reset-password" style={formStyles.link}>Olvidé mi contraseña</Link>
+    <Link href="/(auth)/register" style={formStyles.link}>Crear una cuenta</Link>
   </AuthCard>;
 }

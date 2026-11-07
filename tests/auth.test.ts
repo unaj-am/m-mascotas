@@ -1,8 +1,8 @@
 import { it } from 'node:test';
 import assert from 'node:assert/strict';
-import { createFirebaseAuthDataSource } from '../src/features/auth/data/datasources/firebase-auth-data-source';
-import type { AuthIdentity, FirebaseAuthGateway } from '../src/features/auth/data/datasources/firebase-auth-gateway';
-import type { AuthSessionDto } from '../src/features/auth/data/datasources/auth-data-source';
+import { createFirebaseAuthDataSource } from '../src/core/data/datasources/firebase-auth-data-source';
+import type { AuthIdentity, FirebaseAuthGateway } from '../src/core/data/datasources/firebase-auth-gateway';
+import type { AuthSessionDto } from '../src/core/data/datasources/auth-data-source';
 import type { Result } from '../src/shared/types/result';
 import { success } from '../src/shared/types/result';
 import { createApplication } from '../src/composition/create-application';
@@ -29,6 +29,8 @@ function fixture(initial: AuthIdentity | null = user()) {
     async getProfileFromServer(uid) { profileReads++; return profiles.get(uid) ?? null; },
     observeProfile(_uid, listener) { profileListener = listener; return () => { profileStops++; }; },
     async signIn() {}, async signOut() { current = null; authListener(null); },
+    async createAccount() { throw new Error('Registro no utilizado en esta prueba.'); },
+    async createRegistrationProfile() {}, async deleteAccount() {},
     async sendPasswordReset() {}, async sendVerificationEmail() {},
   };
   const source = createFirebaseAuthDataSource(gateway);
