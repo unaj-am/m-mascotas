@@ -39,3 +39,5 @@ export function useSession() {
   return useStore(store, (state) => state.session);
 }
 export function useAuthActions() { return useApplicationContext().application?.auth ?? null; }
+export function useGetOwnerDashboard() { return useApplicationContext().application?.getOwnerDashboard ?? null; }
+export function useWalkerDashboardActions() { return useApplicationContext().application?.walkerDashboard ?? null; }

@@ -8,10 +8,12 @@ Aplicación para la gestión de mascotas y paseos, con perfiles de dueño y pase
 - Registro de cuentas de dueño o paseador, con creación del perfil en Firestore.
 - Recuperación de contraseña y verificación de correo electrónico.
 - Acceso a paneles según el rol: dueño (`OWNER`) o paseador (`WALKER`).
+- Panel de dueño con resumen de actividad, próximo paseo y consulta de mascotas, paseos y perfil.
+- Panel de paseador con disponibilidad, resumen de actividad, solicitudes, agenda y perfil profesional.
 - Persistencia y cierre de sesión.
 - Validación del perfil y del estado de la cuenta en Firestore.
 
-El proyecto se encuentra en desarrollo. La gestión de mascotas, las solicitudes de paseo, el seguimiento y las notificaciones están pendientes de implementación.
+El proyecto se encuentra en desarrollo. El alta y edición de mascotas, la búsqueda de paseadores, la creación y resolución de solicitudes, el inicio y finalización de paseos, el seguimiento y las notificaciones están pendientes de implementación.
 
 ## Tecnologías
 
@@ -48,6 +50,8 @@ EXPO_PUBLIC_FIREBASE_WEB_APP_ID=
 ```
 
 El acceso utiliza el proyecto `mascotas-5d228`. Cada cuenta debe tener un documento `users/{uid}` con rol `OWNER` o `WALKER`. Las cuentas con `active: false` no pueden acceder a los paneles.
+
+El panel de paseador consulta sus solicitudes y paseos por `walkerId`. El cambio de disponibilidad requiere un perfil profesional existente en `walkers/{uid}` y actualiza únicamente su campo `available`. La creación y edición de ese perfil todavía no están implementadas.
 
 El registro solicita nombre, apellido, teléfono, correo, contraseña y tipo de cuenta. Después de crear el perfil envía el correo de verificación; el acceso al panel requiere confirmar esa dirección. Si falla el envío, la cuenta se conserva y permite reenviar el correo.
 
@@ -104,6 +108,7 @@ src/
 ├── core/               Configuración y componentes comunes
 ├── features/
 │   ├── auth/
+│   ├── home/
 │   ├── users/
 │   ├── pets/
 │   ├── walkers/
