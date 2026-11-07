@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useGetOwnerDashboard, useSession } from '../../../../composition/application-provider';
-import type { OwnerDashboard } from '../../domain/entities/owner-dashboard';
-import type { Session } from '../../../auth/domain/entities/session';
+import type { OwnerDashboard } from '../../../../core/domain/entities/owner-dashboard';
+import type { Session } from '../../../../core/domain/entities/session';
 
 type DashboardState = { status: 'loading' } | { status: 'error'; message: string } | { status: 'ready'; uid: string; data: OwnerDashboard };
 export function useOwnerDashboard() {

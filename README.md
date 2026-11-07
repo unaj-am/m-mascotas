@@ -95,17 +95,24 @@ npm run build:web
 
 ## Arquitectura
 
-El código se organiza en módulos por funcionalidad, separados en tres capas:
-
-- **Domain:** entidades, contratos de repositorios y casos de uso.
-- **Data:** fuentes de datos, adaptadores Firebase e implementaciones de repositorios.
-- **Presentation:** pantallas, hooks y estado de la interfaz.
+El proyecto utiliza una arquitectura por capas. `core` concentra el dominio y el acceso a datos; `features` organiza la presentación por funcionalidad.
 
 ```text
 src/
 ├── app/                Rutas y navegación
 ├── composition/        Construcción e inyección de dependencias
-├── core/               Configuración y componentes comunes
+├── core/
+│   ├── domain/
+│   │   ├── entities/       Entidades y modelos del negocio
+│   │   ├── repositories/   Contratos (interfaces) de repositorios
+│   │   └── use-cases/      Casos de uso y reglas del negocio
+│   ├── data/
+│   │   ├── datasources/    Fuentes de datos y coordinación
+│   │   ├── firebase/       Adaptadores Android/web y configuración Firebase
+│   │   ├── mappers/        Conversión y validación de datos
+│   │   └── repositories/   Implementaciones de los contratos
+│   ├── errors/             Errores compartidos de configuración
+│   └── ui/                 Componentes visuales comunes
 ├── features/
 │   ├── auth/
 │   ├── home/
@@ -117,6 +124,20 @@ src/
 │   └── notifications/
 └── shared/             Tipos compartidos
 ```
+
+Cada módulo de `features` contiene su capa `presentation`, con pantallas, componentes, hooks y estado de interfaz. La construcción e inyección de dependencias se realiza en `composition`.
+
+### Contratos e implementaciones de repositorios
+
+| Contrato en `core/domain/repositories` | Implementación en `core/data/repositories` |
+|---|---|
+| `AuthRepository` — `auth-repository.ts` | `AuthRepositoryImpl` — `auth-repository-impl.ts` |
+| `OwnerDashboardRepository` — `owner-dashboard-repository.ts` | `OwnerDashboardRepositoryImpl` — `owner-dashboard-repository-impl.ts` |
+| `WalkerDashboardRepository` — `walker-dashboard-repository.ts` | `WalkerDashboardRepositoryImpl` — `walker-dashboard-repository-impl.ts` |
+
+Los contratos declaran **qué operaciones existen**. Las clases con sufijo `Impl` definen **cómo se ejecutan**, implementando la interfaz y delegando en las fuentes de datos. Los contratos de los módulos pendientes se conservan en el dominio; sus implementaciones se agregarán cuando se desarrollen esas funcionalidades.
+
+El dominio no importa Firebase, React ni la capa de datos. Las pantallas consumen los casos de uso mediante inyección y no acceden directamente a los SDKs ni a las implementaciones de repositorios.
 
 ## Pruebas y validación
 

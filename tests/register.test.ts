@@ -1,10 +1,10 @@
 import { it } from 'node:test';
 import assert from 'node:assert/strict';
 import { createApplication } from '../src/composition/create-application';
-import { createFirebaseAuthDataSource } from '../src/features/auth/data/datasources/firebase-auth-data-source';
-import type { FirebaseAuthGateway, AuthIdentity, RegistrationProfileDto } from '../src/features/auth/data/datasources/firebase-auth-gateway';
-import type { RegistrationInput } from '../src/features/auth/domain/entities/registration';
-import type { AuthSessionDto } from '../src/features/auth/data/datasources/auth-data-source';
+import { createFirebaseAuthDataSource } from '../src/core/data/datasources/firebase-auth-data-source';
+import type { FirebaseAuthGateway, AuthIdentity, RegistrationProfileDto } from '../src/core/data/datasources/firebase-auth-gateway';
+import type { RegistrationInput } from '../src/core/domain/entities/registration';
+import type { AuthSessionDto } from '../src/core/data/datasources/auth-data-source';
 import type { Result } from '../src/shared/types/result';
 import { success } from '../src/shared/types/result';
 

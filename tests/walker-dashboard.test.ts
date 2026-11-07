@@ -1,9 +1,9 @@
 import { it } from 'node:test';
 import assert from 'node:assert/strict';
-import { FirebaseWalkerDashboardRepository } from '../src/features/home/data/repositories/firebase-walker-dashboard-repository';
-import type { WalkerDashboardDataSource } from '../src/features/home/data/datasources/walker-dashboard-data-source';
-import { createWalkerDashboardUseCases } from '../src/features/home/domain/use-cases/walker-dashboard-use-cases';
-import { summarizeWalkerDashboard } from '../src/features/home/domain/entities/walker-dashboard';
+import { WalkerDashboardRepositoryImpl } from '../src/core/data/repositories/walker-dashboard-repository-impl';
+import type { WalkerDashboardDataSource } from '../src/core/data/datasources/walker-dashboard-data-source';
+import { createWalkerDashboardUseCases } from '../src/core/domain/use-cases/walker-dashboard-use-cases';
+import { summarizeWalkerDashboard } from '../src/core/domain/entities/walker-dashboard';
 
 const session = { status: 'authenticated', uid: 'walker-123', role: 'WALKER' } as const;
 function fixture() {
@@ -23,7 +23,7 @@ function fixture() {
     ]; },
     async updateAvailability(uid, available) { updates.push({ uid, available }); },
   };
-  const repository = new FirebaseWalkerDashboardRepository(source);
+  const repository = new WalkerDashboardRepositoryImpl(source);
   return { source, repository, actions: createWalkerDashboardUseCases(repository), uids, updates };
 }
 

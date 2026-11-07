@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useSession, useWalkerDashboardActions } from '../../../../composition/application-provider';
-import type { WalkerDashboard } from '../../domain/entities/walker-dashboard';
+import type { WalkerDashboard } from '../../../../core/domain/entities/walker-dashboard';
 
 type DashboardState = { status: 'loading' } | { status: 'error'; message: string } | { status: 'ready'; uid: string; data: WalkerDashboard };
 type AvailabilityState = { uid: string | null; busy: boolean; message: string | null; error: boolean };

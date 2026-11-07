@@ -3,8 +3,8 @@ import { useRouter } from 'expo-router';
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { ActionButton, AuthCard, FormMessage, formStyles } from '../../../../core/ui/auth-card';
 import { useAuthActions, useSession } from '../../../../composition/application-provider';
-import type { RegistrationInput, RegistrationReceipt } from '../../domain/entities/registration';
-import type { UserRole } from '../../../users/domain/entities/user-role';
+import type { RegistrationInput, RegistrationReceipt } from '../../../../core/domain/entities/registration';
+import type { UserRole } from '../../../../core/domain/entities/user-role';
 import { useAuthOperation } from '../hooks/use-auth-operation';
 import { SessionScreen } from './session-screen';
 

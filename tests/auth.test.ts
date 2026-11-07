@@ -1,8 +1,8 @@
 import { it } from 'node:test';
 import assert from 'node:assert/strict';
-import { createFirebaseAuthDataSource } from '../src/features/auth/data/datasources/firebase-auth-data-source';
-import type { AuthIdentity, FirebaseAuthGateway } from '../src/features/auth/data/datasources/firebase-auth-gateway';
-import type { AuthSessionDto } from '../src/features/auth/data/datasources/auth-data-source';
+import { createFirebaseAuthDataSource } from '../src/core/data/datasources/firebase-auth-data-source';
+import type { AuthIdentity, FirebaseAuthGateway } from '../src/core/data/datasources/firebase-auth-gateway';
+import type { AuthSessionDto } from '../src/core/data/datasources/auth-data-source';
 import type { Result } from '../src/shared/types/result';
 import { success } from '../src/shared/types/result';
 import { createApplication } from '../src/composition/create-application';

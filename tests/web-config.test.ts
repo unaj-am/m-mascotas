@@ -1,6 +1,7 @@
 import { it } from 'node:test';
 import assert from 'node:assert/strict';
-import { readWebFirebaseConfig, FirebaseConfigurationError } from '../src/core/firebase/web-firebase-config';
+import { readWebFirebaseConfig } from '../src/core/data/firebase/web-firebase-config';
+import { FirebaseConfigurationError } from '../src/core/errors/firebase-configuration-error';
 
 const valid = { apiKey: 'test-public-key', authDomain: 'mascotas-5d228.firebaseapp.com', projectId: 'mascotas-5d228', appId: '1:123456:web:test' };
 it('web exige configuración explícita y no inventa valores a partir de Android', () => {

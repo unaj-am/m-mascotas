@@ -1,9 +1,9 @@
 import { it } from 'node:test';
 import assert from 'node:assert/strict';
-import { FirebaseOwnerDashboardRepository } from '../src/features/home/data/repositories/firebase-owner-dashboard-repository';
-import { createGetOwnerDashboard } from '../src/features/home/domain/use-cases/get-owner-dashboard';
-import { summarizeOwnerDashboard, type OwnerDashboard } from '../src/features/home/domain/entities/owner-dashboard';
-import type { OwnerDashboardDataSource } from '../src/features/home/data/datasources/owner-dashboard-data-source';
+import { OwnerDashboardRepositoryImpl } from '../src/core/data/repositories/owner-dashboard-repository-impl';
+import { createGetOwnerDashboard } from '../src/core/domain/use-cases/get-owner-dashboard';
+import { summarizeOwnerDashboard, type OwnerDashboard } from '../src/core/domain/entities/owner-dashboard';
+import type { OwnerDashboardDataSource } from '../src/core/data/datasources/owner-dashboard-data-source';
 
 function fixture() {
   const uids: string[] = [];
@@ -12,7 +12,7 @@ function fixture() {
     async getPets(uid) { uids.push(uid); return [{ id: 'pet-1', data: { ownerId: uid, name: 'Milo', breed: 'Mestizo', age: 3, photoUri: 'https://example.com/milo.jpg' } }]; },
     async getWalks(uid) { uids.push(uid); return [{ id: 'walk-1', data: { ownerId: uid, petIds: ['pet-1'], status: 'SCHEDULED', scheduledAt: '2027-01-01T10:00:00Z', durationMinutes: 30 } }]; },
   };
-  const repository = new FirebaseOwnerDashboardRepository(source);
+  const repository = new OwnerDashboardRepositoryImpl(source);
   return { source, repository, get: createGetOwnerDashboard(repository), uids };
 }
 

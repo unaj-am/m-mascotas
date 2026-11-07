@@ -3,7 +3,7 @@ import { Platform } from 'react-native';
 import Constants, { ExecutionEnvironment } from 'expo-constants';
 import { Stack } from 'expo-router';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
-import { FirebaseConfigurationError } from '../core/firebase/web-firebase-config';
+import { FirebaseConfigurationError } from '../core/errors/firebase-configuration-error';
 import { ApplicationProvider, useSession } from '../composition/application-provider';
 import type { Application } from '../composition/create-application';
 import { ActionButton, AuthCard } from '../core/ui/auth-card';

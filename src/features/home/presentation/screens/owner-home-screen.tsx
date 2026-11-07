@@ -1,7 +1,7 @@
 import { DashboardShell, DashboardAvatar } from '../components/dashboard-shell';
 import { useState } from 'react';
 import { ActivityIndicator, Image, Pressable, Text, useWindowDimensions, View } from 'react-native';
-import { summarizeOwnerDashboard, type OwnerDashboard, type OwnerPetSummary, type OwnerWalkSummary } from '../../domain/entities/owner-dashboard';
+import { summarizeOwnerDashboard, type OwnerDashboard, type OwnerPetSummary, type OwnerWalkSummary } from '../../../../core/domain/entities/owner-dashboard';
 import { useOwnerDashboard } from '../hooks/use-owner-dashboard';
 import { DashboardIcon, type DashboardIconName } from '../components/dashboard-icon';
 import { colors, styles as s } from './owner-home.styles';

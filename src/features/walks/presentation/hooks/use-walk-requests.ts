@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { AppError, Result } from '../../../../shared/types/result';
 import type { Page } from '../../../../shared/types/page';
-import type { WalkRequest } from '../../domain/entities/walk-request';
-import type { WalkUseCases } from '../../domain/use-cases/walk-use-cases';
+import type { WalkRequest } from '../../../../core/domain/entities/walk-request';
+import type { WalkUseCases } from '../../../../core/domain/use-cases/walk-use-cases';
 
 type State = { status: 'loading' } | { status: 'error'; error: AppError } |
   { status: 'success'; page: Page<WalkRequest> };

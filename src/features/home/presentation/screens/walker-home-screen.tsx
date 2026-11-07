@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { ActivityIndicator, Pressable, Switch, Text, useWindowDimensions, View } from 'react-native';
 import { FormMessage } from '../../../../core/ui/auth-card';
-import type { WalkerDashboard, WalkerRequestSummary, WalkerWalkSummary } from '../../domain/entities/walker-dashboard';
-import { summarizeWalkerDashboard } from '../../domain/entities/walker-dashboard';
+import type { WalkerDashboard, WalkerRequestSummary, WalkerWalkSummary } from '../../../../core/domain/entities/walker-dashboard';
+import { summarizeWalkerDashboard } from '../../../../core/domain/entities/walker-dashboard';
 import { useWalkerDashboard } from '../hooks/use-walker-dashboard';
 import { DashboardAvatar, DashboardShell, type DashboardTab } from '../components/dashboard-shell';
 import { DashboardIcon, type DashboardIconName } from '../components/dashboard-icon';
