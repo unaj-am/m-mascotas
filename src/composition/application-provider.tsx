@@ -41,3 +41,6 @@ export function useSession() {
 export function useAuthActions() { return useApplicationContext().application?.auth ?? null; }
 export function useGetOwnerDashboard() { return useApplicationContext().application?.getOwnerDashboard ?? null; }
 export function useWalkerDashboardActions() { return useApplicationContext().application?.walkerDashboard ?? null; }
+export function usePetActions() { return useApplicationContext().application?.pets ?? null; }
+export function useWalkBookingActions() { return useApplicationContext().application?.booking ?? null; }
+export function useWalkExecutionActions() { return useApplicationContext().application?.walkExecution ?? null; }

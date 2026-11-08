@@ -1,17 +1,31 @@
 import { failure } from '../../../shared/types/result';
-import type { Pet } from '../entities/pet';
+import type { Pet, PetDraft } from '../entities/pet';
+import type { Session } from '../entities/session';
 import type { PetRepository } from '../repositories/pet-repository';
 
-// Conserva las validaciones verificadas en SavePetUseCase de Kotlin.
-export const createSavePet = (repository: PetRepository) => async (pet: Pet) => {
-  if (!pet.id.trim() || !pet.ownerId.trim() || !pet.name.trim()) {
-    return failure('validation', 'La mascota debe tener identificador, dueño y nombre.');
+export const createSavePet = (repository: PetRepository) => async (session: Session, draft: PetDraft) => {
+  if (session.status !== 'authenticated' || session.role !== 'OWNER') {
+    return failure('forbidden', 'Solo una cuenta de dueño puede registrar mascotas.');
   }
-  if (!Number.isFinite(pet.age) || pet.age < 0) {
-    return failure('validation', 'La edad no puede ser negativa.');
+  if (!/^[a-zA-Z0-9_-]{1,128}$/.test(draft.id) || !draft.name.trim() || draft.name.trim().length > 80) {
+    return failure('validation', 'Ingresá el nombre de la mascota, con un máximo de 80 caracteres.');
   }
-  if (!Number.isFinite(pet.weight) || pet.weight <= 0) {
+  if (!Number.isInteger(draft.age) || draft.age < 0) {
+    return failure('validation', 'Ingresá una edad válida en años completos, mayor o igual a cero.');
+  }
+  if (!Number.isFinite(draft.weight) || draft.weight <= 0) {
     return failure('validation', 'El peso debe ser mayor que cero.');
   }
-  return repository.save(pet);
+  if (draft.breed.trim().length > 80 || draft.behavior.trim().length > 200 || draft.specialNeeds.trim().length > 1000 || draft.observations.trim().length > 1000) {
+    return failure('validation', 'La raza, el comportamiento o las observaciones superan el largo permitido.');
+  }
+  if (!['SMALL', 'MEDIUM', 'LARGE', 'EXTRA_LARGE', 'UNKNOWN'].includes(draft.size)) {
+    return failure('validation', 'Elegí un tamaño válido para la mascota.');
+  }
+  const pet: Pet = {
+    id: draft.id, ownerId: session.uid, name: draft.name.trim(), breed: draft.breed.trim(),
+    age: draft.age, weight: draft.weight, size: draft.size, behavior: draft.behavior.trim(),
+    observations: draft.observations.trim(), specialNeeds: draft.specialNeeds.trim(), photoUri: null,
+  };
+  return repository.create(pet);
 };

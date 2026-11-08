@@ -7,6 +7,11 @@ import { useWalkerDashboard } from '../hooks/use-walker-dashboard';
 import { DashboardAvatar, DashboardShell, type DashboardTab } from '../components/dashboard-shell';
 import { DashboardIcon, type DashboardIconName } from '../components/dashboard-icon';
 import { colors, styles as s } from './walker-home.styles';
+import { useBookingRequests } from '../../../walks/presentation/hooks/use-booking-requests';
+import { useWalks } from '../../../walks/presentation/hooks/use-walks';
+import { useWalkExecution, type WalkExecution } from '../../../walks/presentation/hooks/use-walk-execution';
+import type { WalkAction } from '../../../../core/domain/use-cases/walk-execution-use-cases';
+import { WalkTiming } from '../../../walks/presentation/components/walk-timing';
 
 type Tab = 'home' | 'requests' | 'agenda' | 'profile';
 type AgendaFilter = 'scheduled' | 'active' | 'history';
@@ -30,21 +35,35 @@ function EmptyState({ title, description, icon }: { title: string; description: 
     <Text style={s.emptyTitle}>{title}</Text><Text style={s.emptyDescription}>{description}</Text>
   </View>;
 }
-function RequestCard({ request }: { request: WalkerRequestSummary }) {
+type Actions = { execution: WalkExecution; disabled: boolean; perform: (action: WalkAction, id: string) => void };
+function RequestCard({ request, execution, disabled, perform }: { request: WalkerRequestSummary } & Actions) {
+  const busy = execution.operation.busy && execution.operation.id === request.id && execution.operation.action === 'accept';
   return <View style={s.surface}>
     <View style={s.walkHeader}><Text style={s.requestTitle}>{request.ownerName || 'Solicitud de paseo'}</Text><View style={s.badge}><Text style={s.badgeText}>{requestStatus[request.status]}</Text></View></View>
     <View style={s.detailLine}><Icon name="calendar" size={20} /><View style={{ flex: 1 }}><Text style={s.fieldLabel}>Fecha y hora</Text><Text style={s.detailText}>{dateLabel(request.scheduledAt)}</Text></View></View>
     <View style={s.detailLine}><Icon name="paw" size={20} /><Text style={s.detailText}>{petLabel(request)}</Text></View>
     {request.durationMinutes !== null && <Text style={s.petDetail}>Duración: {request.durationMinutes} minutos</Text>}
     {request.observations ? <View><Text style={s.fieldLabel}>Observaciones</Text><Text numberOfLines={4} style={s.detailText}>{request.observations}</Text></View> : null}
+    {request.status === 'PENDING' && <Pressable accessibilityRole="button" accessibilityLabel={`Aceptar paseo de ${request.ownerName || 'este dueño'}`} accessibilityState={{ disabled: disabled || execution.operation.busy, busy }}
+      disabled={disabled || execution.operation.busy} onPress={() => perform('accept', request.id)} style={[s.button, s.primary, (disabled || execution.operation.busy) && s.muted]}>
+      {busy && <ActivityIndicator color={colors.white} />}<Text style={s.primaryText}>{busy ? 'Aceptando…' : 'Aceptar paseo'}</Text>
+    </Pressable>}
   </View>;
 }
-function WalkCard({ walk }: { walk: WalkerWalkSummary }) {
+function WalkCard({ walk, execution, disabled, perform }: { walk: WalkerWalkSummary } & Actions) {
+  const action = walk.status === 'SCHEDULED' ? 'start' : walk.status === 'IN_PROGRESS' ? 'complete' : null;
+  const busy = execution.operation.busy && execution.operation.id === walk.id && execution.operation.action === action;
   return <View style={s.surface}>
     <View style={s.walkHeader}><View style={s.iconTile}><Icon name="calendar" size={20} /></View><View style={[s.badge, walk.status === 'IN_PROGRESS' && s.badgeActive]}><Text style={s.badgeText}>{walkStatus[walk.status]}</Text></View></View>
     <Text style={s.walkDate}>{dateLabel(walk.scheduledAt)}</Text>
     <View style={s.detailLine}><Icon name="paw" size={20} /><Text style={s.detailText}>{petLabel(walk)}</Text></View>
     {walk.durationMinutes !== null && <Text style={s.walkTime}>{walk.durationMinutes} minutos</Text>}
+    {!!walk.observations && <View><Text style={s.fieldLabel}>Indicaciones del paseo</Text><Text style={s.detailText}>{walk.observations}</Text></View>}
+    <WalkTiming walk={walk} variant="walker" />
+    {action && <Pressable accessibilityRole="button" accessibilityState={{ disabled: disabled || execution.operation.busy, busy }} disabled={disabled || execution.operation.busy}
+      onPress={() => perform(action, walk.id)} style={[s.button, s.primary, (disabled || execution.operation.busy) && s.muted]}>
+      {busy && <ActivityIndicator color={colors.white} />}<Text style={s.primaryText}>{busy ? 'Guardando…' : action === 'start' ? 'Iniciar paseo' : 'Finalizar paseo'}</Text>
+    </Pressable>}
   </View>;
 }
 function AvailabilityCard({ data, busy, onChange }: { data: WalkerDashboard; busy: boolean; onChange: (value: boolean) => void }) {
@@ -62,9 +81,9 @@ function AvailabilityCard({ data, busy, onChange }: { data: WalkerDashboard; bus
     </View>
   </View>;
 }
-function HomeContent({ data, compact, busy, onAvailabilityChange, navigate }: {
+function HomeContent({ data, compact, busy, onAvailabilityChange, navigate, execution, disabled, perform }: {
   data: WalkerDashboard; compact: boolean; busy: boolean; onAvailabilityChange: (value: boolean) => void; navigate: (tab: Tab, filter?: AgendaFilter) => void;
-}) {
+} & Actions) {
   const summary = summarizeWalkerDashboard(data);
   const stats: readonly { title: string; value: string; tab: Tab; icon: DashboardIconName; rating?: boolean; filter?: AgendaFilter }[] = [
     { title: 'Solicitudes pendientes', value: String(summary.pendingCount), tab: 'requests', icon: 'inbox' },
@@ -83,11 +102,11 @@ function HomeContent({ data, compact, busy, onAvailabilityChange, navigate }: {
       <Text style={s.subtitle}>{summary.pendingCount ? `${summary.pendingCount} solicitudes para revisar` : 'No tenés solicitudes nuevas'}</Text></View>
       {summary.pendingCount > 0 && <Pressable accessibilityRole="button" onPress={() => navigate('requests')} style={s.textLink}><Text style={s.textLinkLabel}>Ver todas</Text><Icon name="arrow" size={17} /></Pressable>}
     </View>
-    {summary.pending.length ? summary.pending.slice(0, 3).map((request) => <RequestCard key={request.id} request={request} />)
+    {summary.pending.length ? summary.pending.slice(0, 3).map((request) => <RequestCard key={request.id} request={request} execution={execution} disabled={disabled} perform={perform} />)
       : <EmptyState icon="inbox" title="Todo al día" description="Cuando recibas nuevas solicitudes de paseo, aparecerán acá." />}
   </>;
 }
-function RequestsContent({ requests }: { requests: readonly WalkerRequestSummary[] }) {
+function RequestsContent({ requests, execution, disabled, perform }: { requests: readonly WalkerRequestSummary[] } & Actions) {
   const [filter, setFilter] = useState<'pending' | 'all'>('pending');
   const visible = requests.filter((request) => filter === 'all' || request.status === 'PENDING');
   return <>
@@ -95,21 +114,21 @@ function RequestsContent({ requests }: { requests: readonly WalkerRequestSummary
       <Pressable key={item.id} accessibilityRole="button" accessibilityState={{ selected: filter === item.id }} onPress={() => setFilter(item.id)} style={[s.filter, filter === item.id && s.filterActive]}>
         <Text style={[s.filterText, filter === item.id && s.filterTextActive]}>{item.label}</Text>
       </Pressable>)}</View>
-    {visible.length ? visible.map((request) => <RequestCard key={request.id} request={request} />)
+    {visible.length ? visible.map((request) => <RequestCard key={request.id} request={request} execution={execution} disabled={disabled} perform={perform} />)
       : <EmptyState icon="inbox" title="Todo al día" description="No tenés solicitudes en esta categoría." />}
-    <Text style={s.notice}>La aceptación y el rechazo de solicitudes estarán disponibles próximamente.</Text>
+    <Text style={s.notice}>Al aceptar una solicitud, el paseo aparece en tu agenda como programado.</Text>
   </>;
 }
-function AgendaContent({ walks, filter, setFilter }: { walks: readonly WalkerWalkSummary[]; filter: AgendaFilter; setFilter: (filter: AgendaFilter) => void }) {
+function AgendaContent({ walks, filter, setFilter, execution, disabled, perform }: { walks: readonly WalkerWalkSummary[]; filter: AgendaFilter; setFilter: (filter: AgendaFilter) => void } & Actions) {
   const visible = walks.filter((walk) => filter === 'scheduled' ? walk.status === 'SCHEDULED' : filter === 'active' ? walk.status === 'IN_PROGRESS' : ['COMPLETED', 'CANCELLED'].includes(walk.status));
   return <>
     <View style={s.filters}>{([{ id: 'scheduled', label: 'Programados' }, { id: 'active', label: 'En curso' }, { id: 'history', label: 'Historial' }] as const).map((item) =>
       <Pressable key={item.id} accessibilityRole="button" accessibilityState={{ selected: filter === item.id }} onPress={() => setFilter(item.id)} style={[s.filter, filter === item.id && s.filterActive]}>
         <Text style={[s.filterText, filter === item.id && s.filterTextActive]}>{item.label}</Text>
       </Pressable>)}</View>
-    {visible.length ? visible.map((walk) => <WalkCard key={walk.id} walk={walk} />)
+    {visible.length ? visible.map((walk) => <WalkCard key={walk.id} walk={walk} execution={execution} disabled={disabled} perform={perform} />)
       : <EmptyState icon="calendar" title="Sin paseos para mostrar" description="Los paseos de esta categoría aparecerán en tu agenda cuando estén disponibles." />}
-    <Text style={s.notice}>El inicio, seguimiento y finalización de paseos estarán disponibles próximamente.</Text>
+    <Text style={s.notice}>Los paseos finalizados quedan guardados en el historial.</Text>
   </>;
 }
 function ProfileContent({ data }: { data: WalkerDashboard }) {
@@ -137,18 +156,39 @@ export function WalkerHomeScreen() {
   const [agendaFilter, setAgendaFilter] = useState<AgendaFilter>('scheduled');
   function navigate(next: Tab, filter?: AgendaFilter) { setTab(next); if (filter) setAgendaFilter(filter); }
   const { state, reload, changeAvailability, availability } = useWalkerDashboard();
-  const data = state.status === 'ready' ? state.data : null;
+  const incoming = useBookingRequests('walker');
+  const walks = useWalks('walker');
+  const execution = useWalkExecution();
+  function perform(action: WalkAction, id: string) {
+    void execution.act(action, id).then((walk) => { if (walk) navigate('agenda', walk.status === 'SCHEDULED' ? 'scheduled' : walk.status === 'IN_PROGRESS' ? 'active' : 'history'); });
+  }
+  const liveWalks = walks.state.status === 'ready' ? walks.state.data.items.map((walk) => ({ ...walk,
+    petNames: incoming.state.status === 'ready' ? incoming.state.data.items.find((request) => request.id === walk.id)?.petNames ?? []
+      : state.status === 'ready' ? state.data.walks.find((item) => item.id === walk.id)?.petNames ?? [] : [] })) : null;
+  const data = state.status === 'ready' ? { ...state.data, requests: incoming.state.status === 'ready' ? incoming.state.data.items : state.data.requests, walks: liveWalks ?? state.data.walks } : null;
+  const requestActions: Actions = { execution, perform, disabled: incoming.state.status !== 'ready' || incoming.state.data.pendingWrites };
+  const walkActions: Actions = { execution, perform, disabled: walks.state.status !== 'ready' || walks.state.data.pendingWrites };
+  const profileDependent = tab === 'home' || tab === 'profile';
   const title = tab === 'home' ? `Hola, ${data?.name || 'paseador'}` : tab === 'requests' ? 'Mis solicitudes' : tab === 'agenda' ? 'Mi agenda' : 'Mi perfil';
   const subtitle = { home: 'Este es el resumen de tu actividad.', requests: 'Revisá las solicitudes de paseo que recibiste.', agenda: 'Organizá tus paseos y consultá tu historial.', profile: 'Tus datos de contacto y tu perfil profesional.' }[tab];
   return <DashboardShell variant="walker" tabs={tabs} activeTab={tab} onTabChange={setTab} name={data?.name || ''}
-    profileImage={data?.profileImage ?? null} title={title} subtitle={subtitle} loading={state.status === 'loading'}
-    refreshDisabled={availability.busy} onRefresh={() => { void reload(); }}>
-    {state.status === 'loading' && <View style={[s.surface, s.busySurface]}><ActivityIndicator color={colors.primary} /><Text accessibilityLiveRegion="polite" style={s.busyText}>Cargando tu actividad…</Text></View>}
-    {state.status === 'error' && <View style={s.surface}><Text style={s.emptyTitleLeft}>No pudimos cargar tu inicio</Text><Text style={s.subtitle}>{state.message}</Text>
+    profileImage={data?.profileImage ?? null} title={title} subtitle={subtitle} loading={tab === 'requests' ? incoming.state.status === 'loading' : tab === 'agenda' ? walks.state.status === 'loading' : state.status === 'loading'}
+    refreshDisabled={availability.busy || execution.operation.busy} onRefresh={() => { incoming.retry(); walks.retry(); void reload(); }}>
+    {profileDependent && state.status === 'loading' && <View style={[s.surface, s.busySurface]}><ActivityIndicator color={colors.primary} /><Text accessibilityLiveRegion="polite" style={s.busyText}>Cargando tu actividad…</Text></View>}
+    {profileDependent && state.status === 'error' && <View style={s.surface}><Text style={s.emptyTitleLeft}>No pudimos cargar tu inicio</Text><Text style={s.subtitle}>{state.message}</Text>
       <Pressable accessibilityRole="button" onPress={() => { void reload(); }} style={[s.button, s.primary]}><Text style={s.primaryText}>Volver a intentar</Text></Pressable>
     </View>}
     {availability.message && <View style={availability.error ? s.error : s.feedback}><FormMessage message={availability.message} error={availability.error} /></View>}
-    {data && (tab === 'home' ? <HomeContent data={data} compact={width < 760} busy={availability.busy} onAvailabilityChange={(value) => { void changeAvailability(value); }} navigate={navigate} />
-      : tab === 'requests' ? <RequestsContent requests={data.requests} /> : tab === 'agenda' ? <AgendaContent walks={data.walks} filter={agendaFilter} setFilter={setAgendaFilter} /> : <ProfileContent data={data} />)}
+    {(execution.operation.busy || execution.operation.message) && <View style={execution.operation.error ? s.error : s.feedback}><FormMessage message={execution.operation.busy ? 'Guardando los cambios del paseo…' : execution.operation.message} error={execution.operation.error} /></View>}
+    {incoming.state.status === 'error' && <View style={s.surface}><Text accessibilityRole="alert" style={s.notice}>No pudimos actualizar las solicitudes: {incoming.state.message}</Text><Pressable accessibilityRole="button" onPress={incoming.retry} style={s.textLink}><Text style={s.textLinkLabel}>Volver a intentar</Text></Pressable></View>}
+    {tab === 'requests' && incoming.state.status === 'loading' && <View style={s.surface}><ActivityIndicator color={colors.primary} /><Text style={s.notice}>Buscando tus solicitudes…</Text></View>}
+    {incoming.state.status === 'ready' && (incoming.state.data.fromCache || incoming.state.data.pendingWrites) && <Text style={s.notice}>Las solicitudes muestran una copia guardada o cambios pendientes de confirmación.</Text>}
+    {tab === 'requests' && incoming.state.status === 'ready' && <RequestsContent requests={incoming.state.data.items} {...requestActions} />}
+    {walks.state.status === 'error' && <View style={s.surface}><Text accessibilityRole="alert" style={s.notice}>No pudimos actualizar tus paseos: {walks.state.message}</Text><Pressable accessibilityRole="button" onPress={walks.retry} style={s.textLink}><Text style={s.textLinkLabel}>Volver a intentar</Text></Pressable></View>}
+    {tab === 'agenda' && walks.state.status === 'loading' && <View style={s.surface}><ActivityIndicator color={colors.primary} /><Text style={s.notice}>Buscando tus paseos…</Text></View>}
+    {walks.state.status === 'ready' && (walks.state.data.fromCache || walks.state.data.pendingWrites) && <Text style={s.notice}>Los paseos muestran una copia guardada o cambios pendientes de confirmación.</Text>}
+    {tab === 'agenda' && liveWalks && <AgendaContent walks={liveWalks} filter={agendaFilter} setFilter={setAgendaFilter} {...walkActions} />}
+    {data && tab === 'home' && <HomeContent data={data} compact={width < 760} busy={availability.busy} onAvailabilityChange={(value) => { void changeAvailability(value); }} navigate={navigate} {...requestActions} />}
+    {data && tab === 'profile' && <ProfileContent data={data} />}
   </DashboardShell>;
 }

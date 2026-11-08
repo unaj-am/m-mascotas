@@ -3,6 +3,8 @@ import { createFirebaseAuthDataSource } from '../core/data/datasources/firebase-
 import { createApplication } from './create-application';
 import { createWebOwnerDashboardSource } from '../core/data/firebase/web-owner-dashboard-source';
 import { createWebWalkerDashboardSource } from '../core/data/firebase/web-walker-dashboard-source';
+import { createWebPetDataSource } from '../core/data/firebase/web-pet-data-source';
+import { createWebWalkBookingSource } from '../core/data/firebase/web-walk-booking-source';
 export function createPlatformApplication() {
-  return createApplication(createFirebaseAuthDataSource(createWebAuthGateway()), createWebOwnerDashboardSource(), createWebWalkerDashboardSource());
+  return createApplication(createFirebaseAuthDataSource(createWebAuthGateway()), createWebOwnerDashboardSource(), createWebWalkerDashboardSource(), createWebPetDataSource(), createWebWalkBookingSource());
 }

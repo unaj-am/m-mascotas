@@ -8,6 +8,8 @@ export type WalkerRequestSummary = Readonly<{
 export type WalkerWalkSummary = Readonly<{
   id: string; petIds: readonly string[]; petNames: readonly string[];
   scheduledAt: number | null; durationMinutes: number | null; status: WalkStatus;
+  startedAt?: number | null; finishedAt?: number | null;
+  observations?: string;
 }>;
 export type WalkerDashboard = Readonly<{
   name: string; lastName: string; email: string; phone: string; profileImage: string | null;

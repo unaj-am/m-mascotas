@@ -1,9 +1,10 @@
 import type { Result } from '../../../shared/types/result';
-import type { Pet } from '../entities/pet';
+import type { Pet, PetList } from '../entities/pet';
+import type { Observer, Unsubscribe } from '../../../shared/types/subscription';
 
+/** Contrato para el alta y la observación del listado de mascotas. */
 export interface PetRepository {
-  getById(petId: string): Promise<Result<Pet | null>>;
-  getByOwner(ownerId: string): Promise<Result<readonly Pet[]>>;
-  save(pet: Pet): Promise<Result<void>>;
-  delete(petId: string): Promise<Result<void>>;
+  newId(): string;
+  create(pet: Pet): Promise<Result<void>>;
+  observeByOwner(ownerId: string, observer: Observer<PetList>): Unsubscribe;
 }

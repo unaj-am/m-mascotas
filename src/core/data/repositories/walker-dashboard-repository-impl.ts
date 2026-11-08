@@ -42,6 +42,7 @@ function walk(document: DashboardDocument, uid: string, requests: readonly Walke
   return {
     id: document.id, petIds, petNames, status: data.status as WalkerWalkSummary['status'],
     scheduledAt: timestamp(data.scheduledAt), durationMinutes: nonnegative(data.durationMinutes),
+    startedAt: timestamp(data.startedAt), finishedAt: timestamp(data.finishedAt), observations: text(data.observations),
   };
 }
 
