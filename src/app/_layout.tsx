@@ -7,6 +7,7 @@ import { FirebaseConfigurationError } from '../core/errors/firebase-configuratio
 import { ApplicationProvider, useSession } from '../composition/application-provider';
 import type { Application } from '../composition/create-application';
 import { ActionButton, AuthCard } from '../core/ui/auth-card';
+import { WalkGpsCoordinator } from '../features/tracking/presentation/components/walk-gps-coordinator';
 
 function Routes() {
   const session = useSession();
@@ -33,7 +34,7 @@ function Bootstrap() {
     setError(null);
     import('../composition/create-platform-application')
       .then(({ createPlatformApplication }) => { if (active) setApplication(createPlatformApplication()); })
-      .catch((cause: unknown) => { if (active) setError(cause instanceof FirebaseConfigurationError ? cause.message : Platform.OS === 'web' ? 'No pudimos iniciar la conexión web. Revisá la configuración Firebase y volvé a cargar la página.' : 'No encontramos la conexión Firebase en esta instalación. Instalá la nueva versión de desarrollo y volvé a abrir la app.'); });
+      .catch((cause: unknown) => { if (active) setError(cause instanceof FirebaseConfigurationError ? cause.message : Platform.OS === 'web' ? 'No pudimos iniciar la aplicación web. Recargá la página y volvé a intentar.' : 'No encontramos la conexión Firebase en esta instalación. Instalá la nueva versión de desarrollo y volvé a abrir la app.'); });
     return () => { active = false; };
   }, [attempt, unsupported]);
   if (unsupported) return <AuthCard title="Abrí la versión de desarrollo" subtitle="Para iniciar sesión con tu cuenta necesitás instalar Mascotas como aplicación. El acceso no está disponible dentro de Expo Go." />;
@@ -41,7 +42,7 @@ function Bootstrap() {
     <ActionButton title="Volver a intentar" onPress={() => setAttempt((value) => value + 1)} />
   </AuthCard>;
   if (!application) return <AuthCard title="Mascotas" subtitle="Preparando tu sesión…" />;
-  return <ApplicationProvider application={application}><Routes /></ApplicationProvider>;
+  return <ApplicationProvider application={application}><WalkGpsCoordinator /><Routes /></ApplicationProvider>;
 }
 export default function RootLayout() {
   return <SafeAreaProvider><Bootstrap /></SafeAreaProvider>;

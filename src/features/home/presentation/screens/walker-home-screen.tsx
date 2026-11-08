@@ -12,6 +12,8 @@ import { useWalks } from '../../../walks/presentation/hooks/use-walks';
 import { useWalkExecution, type WalkExecution } from '../../../walks/presentation/hooks/use-walk-execution';
 import type { WalkAction } from '../../../../core/domain/use-cases/walk-execution-use-cases';
 import { WalkTiming } from '../../../walks/presentation/components/walk-timing';
+import { walkStatusLabels as walkStatus } from '../../../walks/presentation/state/walk-display';
+import { useGpsSharing } from '../../../tracking/presentation/hooks/use-gps-sharing';
 
 type Tab = 'home' | 'requests' | 'agenda' | 'profile';
 type AgendaFilter = 'scheduled' | 'active' | 'history';
@@ -20,7 +22,6 @@ const tabs: readonly DashboardTab<Tab>[] = [
   { id: 'agenda', label: 'Agenda', icon: 'calendar' }, { id: 'profile', label: 'Perfil', icon: 'user' },
 ];
 const requestStatus = { PENDING: 'Pendiente', ACCEPTED: 'Aceptada', REJECTED: 'Rechazada', CANCELLED: 'Cancelada' };
-const walkStatus = { SCHEDULED: 'Programado', IN_PROGRESS: 'En curso', COMPLETED: 'Completado', CANCELLED: 'Cancelado' };
 const dateLabel = (value: number | null) => value === null ? 'Fecha a confirmar' : new Date(value).toLocaleString('es-AR', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
 function petLabel(item: Pick<WalkerRequestSummary, 'petIds' | 'petNames'>) {
   const extra = Math.max(0, item.petIds.length - item.petNames.length);
@@ -50,6 +51,16 @@ function RequestCard({ request, execution, disabled, perform }: { request: Walke
     </Pressable>}
   </View>;
 }
+function WalkGpsStatus({ walkId, disabled }: { walkId: string; disabled: boolean }) {
+  const gps = useGpsSharing();
+  return <View style={{ gap: 10 }}>
+    <Text style={s.notice}>{gps.state.sharing && gps.state.walkId === walkId ? 'GPS activo: compartiendo ubicación con el dueño.' : 'El GPS no está compartiendo la ubicación de este paseo.'}</Text>
+    {gps.state.message && <Text style={s.notice}>{gps.state.message}</Text>}
+    {(!gps.state.sharing || gps.state.walkId !== walkId) && <Pressable accessibilityRole="button" disabled={gps.busy || disabled} onPress={() => { void gps.resume(walkId); }} style={s.textLink}>
+      <Text style={s.textLinkLabel}>{gps.busy ? 'Activando GPS…' : 'Compartir ubicación'}</Text>
+    </Pressable>}
+  </View>;
+}
 function WalkCard({ walk, execution, disabled, perform }: { walk: WalkerWalkSummary } & Actions) {
   const action = walk.status === 'SCHEDULED' ? 'start' : walk.status === 'IN_PROGRESS' ? 'complete' : null;
   const busy = execution.operation.busy && execution.operation.id === walk.id && execution.operation.action === action;
@@ -60,6 +71,8 @@ function WalkCard({ walk, execution, disabled, perform }: { walk: WalkerWalkSumm
     {walk.durationMinutes !== null && <Text style={s.walkTime}>{walk.durationMinutes} minutos</Text>}
     {!!walk.observations && <View><Text style={s.fieldLabel}>Indicaciones del paseo</Text><Text style={s.detailText}>{walk.observations}</Text></View>}
     <WalkTiming walk={walk} variant="walker" />
+    {walk.status === 'SCHEDULED' && <Text style={s.notice}>Al iniciar se pedirá permiso para compartir tu ubicación durante el paseo. En Android, permití la ubicación siempre para continuar al usar otras aplicaciones.</Text>}
+    {walk.status === 'IN_PROGRESS' && <WalkGpsStatus walkId={walk.id} disabled={execution.operation.busy} />}
     {action && <Pressable accessibilityRole="button" accessibilityState={{ disabled: disabled || execution.operation.busy, busy }} disabled={disabled || execution.operation.busy}
       onPress={() => perform(action, walk.id)} style={[s.button, s.primary, (disabled || execution.operation.busy) && s.muted]}>
       {busy && <ActivityIndicator color={colors.white} />}<Text style={s.primaryText}>{busy ? 'Guardando…' : action === 'start' ? 'Iniciar paseo' : 'Finalizar paseo'}</Text>

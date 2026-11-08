@@ -12,6 +12,8 @@ import { createWalkExecutionUseCases } from '../src/core/domain/use-cases/walk-e
 import { createWalkBookingUseCases } from '../src/core/domain/use-cases/walk-booking-use-cases';
 import { toWalk, toWalkDocument } from '../src/core/data/mappers/walk-mapper';
 import { elapsedWalkSeconds, formatWalkElapsed } from '../src/features/walks/presentation/state/walk-timing';
+import { ownerVisibleRequests, walkStatusLabels } from '../src/features/walks/presentation/state/walk-display';
+import type { WalkRequest } from '../src/core/domain/entities/walk-request';
 
 const walker: Session = { status: 'authenticated', uid: 'walker-1', role: 'WALKER' };
 const owner: Session = { status: 'authenticated', uid: 'owner-1', role: 'OWNER' };
@@ -257,17 +259,25 @@ it('bloquea operaciones simultáneas desde la misma app y libera el bloqueo desp
 it('dueño y paseador reciben aceptación, inicio y finalización desde clientes web/Android independientes', async () => {
   const db = backend(), walkerWeb = db.client(), walkerAndroid = db.client(), ownerWeb = db.client(), ownerAndroid = db.client();
   const streams: Result<LiveList<Walk>>[][] = [[], [], [], [], []];
+  let ownerRequests: readonly WalkRequest[] = [];
+  const stopRequests = ownerWeb.booking.observeRequests(owner, 'owner', (result) => { if (result.ok) ownerRequests = result.value.items; });
+  assert.equal(ownerVisibleRequests(ownerRequests).length, 1);
   const stops = [walkerWeb.execution.observeWalks(walker, 'walker', (value) => streams[0]!.push(value)), walkerAndroid.execution.observeWalks(walker, 'walker', (value) => streams[1]!.push(value)),
     ownerWeb.execution.observeWalks(owner, 'owner', (value) => streams[2]!.push(value)), ownerAndroid.execution.observeWalks(owner, 'owner', (value) => streams[3]!.push(value)),
     ownerWeb.execution.observeWalks({ status: 'authenticated', uid: 'other', role: 'OWNER' }, 'owner', (value) => streams[4]!.push(value))];
-  for (const [action, status] of [['accept', 'SCHEDULED'], ['start', 'IN_PROGRESS'], ['complete', 'COMPLETED']] as const) {
+  for (const [action, status, label] of [['accept', 'SCHEDULED', 'Confirmado'], ['start', 'IN_PROGRESS', 'En curso'], ['complete', 'COMPLETED', 'Finalizado']] as const) {
     assert.equal((await walkerWeb.execution[action](walker, 'request-1')).ok, true);
     const value = streams[0]!.at(-1); assert.ok(value?.ok); assert.equal(value.value.items[0]?.status, status);
     for (const stream of streams.slice(1, 4)) assert.deepEqual(stream.at(-1), value);
+    // La solicitud permanece aceptada, pero la pantalla del dueño muestra el paseo actualizado.
+    assert.equal(ownerRequests[0]?.status, 'ACCEPTED');
+    assert.equal(ownerVisibleRequests(ownerRequests).length, 0);
+    const ownerWalks = streams[2]!.at(-1); assert.ok(ownerWalks?.ok);
+    assert.equal(walkStatusLabels[ownerWalks.value.items[0]!.status], label);
     const other = streams[4]!.at(-1); assert.ok(other?.ok); assert.equal(other.value.items.length, 0);
     db.time(start + 1800000);
   }
-  stops.forEach((stop) => stop()); assert.equal(db.listeners, 0);
+  stopRequests(); stops.forEach((stop) => stop()); assert.equal(db.listeners, 0);
 });
 
 it('las suscripciones respetan el rol y dejan de publicar al cerrar la cuenta', async () => {

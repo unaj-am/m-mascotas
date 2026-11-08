@@ -16,6 +16,15 @@
                                  "@react-native-firebase/app",
                                  "@react-native-firebase/auth",
                                  [
+                                     "expo-location",
+                                     {
+                                         "locationAlwaysAndWhenInUsePermission": "Mascotas comparte la ubicación del paseador durante un paseo en curso.",
+                                         "locationWhenInUsePermission": "Mascotas usa el GPS del paseador para mostrar el recorrido al dueño.",
+                                         "isAndroidBackgroundLocationEnabled": true,
+                                         "isAndroidForegroundServiceEnabled": true
+                                     }
+                                 ],
+                                 [
                                      "expo-build-properties",
                                      {
                                          "android":  {
