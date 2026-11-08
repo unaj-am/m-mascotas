@@ -16,6 +16,8 @@ export function toWalk(document: DashboardDocument, uid: string, side: RequestSi
 export const walkTime = (value: number | null) => value === null ? '' : new Date(value).toISOString();
 export function toWalkDocument(walk: Walk) {
   return { ownerId: walk.ownerId, walkerId: walk.walkerId, petIds: [...walk.petIds], scheduledAt: walkTime(walk.scheduledAt),
-    durationMinutes: walk.durationMinutes, status: walk.status, startedAt: walkTime(walk.startedAt), finishedAt: walkTime(walk.finishedAt),
-    distanceKm: walk.distanceKm ?? 0, observations: walk.observations };
+    durationMinutes: walk.durationMinutes, status: walk.status,
+    startedAt: walk.startedAt === null ? null : walkTime(walk.startedAt),
+    finishedAt: walk.finishedAt === null ? null : walkTime(walk.finishedAt),
+    distanceKm: walk.distanceKm, observations: walk.observations };
 }

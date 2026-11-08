@@ -67,7 +67,7 @@ Para solicitar un paseo se seleccionan las mascotas, una fecha futura, el horari
 
 Las reglas deben permitir consultar los perfiles públicos disponibles de `walkers`, crear solicitudes con el `ownerId` autenticado y estado `PENDING`, y consultar las solicitudes únicamente por el dueño o paseador correspondiente. Los listados usan filtros por `ownerId` y `walkerId`. El alta se realiza en una transacción y requiere conexión.
 
-El paseador puede **Aceptar paseo** desde sus solicitudes. Una transacción marca la solicitud como `ACCEPTED` y crea `walks/{requestId}` en estado `SCHEDULED`. La misma solicitud genera un solo paseo; volver a aceptar una solicitud aceptada conserva el paseo existente. La lectura del documento de paseo todavía inexistente debe estar permitida para el paseador destinatario al realizar esta transacción, sin dar acceso a paseos ajenos.
+El paseador puede **Aceptar paseo** desde sus solicitudes. Una transacción marca la solicitud como `ACCEPTED` y crea `walks/{requestId}` en estado `SCHEDULED`. La misma solicitud genera un solo paseo; volver a aceptar una solicitud aceptada conserva el paseo existente. La transacción sigue el contrato de la app Kotlin: lee la solicitud y su paseo, conserva la fecha y las observaciones originales y crea los campos `startedAt`, `finishedAt` y `distanceKm` con valor `null`.
 
 En **Agenda → Programados**, **Iniciar paseo** cambia el estado a `IN_PROGRESS` y registra `startedAt`. En **En curso**, **Finalizar paseo** guarda `COMPLETED` y `finishedAt`; el paseo queda en **Historial**. Los horarios usan cadenas ISO compatibles con la app nativa. El contador se calcula desde el horario guardado y se recupera al volver a abrir la app. No registra ubicación ni distancia recorrida.
 

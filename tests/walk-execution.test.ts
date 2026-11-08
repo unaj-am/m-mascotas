@@ -87,6 +87,53 @@ it('aceptar crea un paseo programado y cambia la solicitud en una sola transacci
   assert.equal(db.writes, 2);
 });
 
+it('aceptar reproduce el contrato Kotlin sin lecturas de perfil ni cambios en los datos de la solicitud', async () => {
+  const legacy = { ...request, scheduledAt: '2026-11-08T17:30', observations: '  Prueba 2 Franco  ' };
+  const reads: string[] = [];
+  let created: unknown;
+  let update: unknown;
+  const port: WalkExecutionTransaction = {
+    async get(collection, id) {
+      reads.push(`${collection}/${id}`);
+      if (collection === 'walkRequests') return legacy;
+      if (collection === 'walks') return null;
+      throw { code: 'permission-denied' };
+    },
+    setWalk(id, data) {
+      assert.equal(id, 'request-1');
+      // Contrato de WalkRequestRemoteDataSource.kt, no el de WalkRemoteDataSource.kt.
+      assert.equal(data.startedAt, null);
+      assert.equal(data.finishedAt, null);
+      assert.equal(data.distanceKm, null);
+      assert.equal(data.scheduledAt, legacy.scheduledAt);
+      assert.equal(data.observations, legacy.observations);
+      created = data;
+    },
+    update(collection, id, data) { update = { collection, id, data }; },
+  };
+  await acceptWalkTransaction(port, 'walker-1', 'request-1');
+  assert.deepEqual(reads, ['walkRequests/request-1', 'walks/request-1']);
+  assert.deepEqual(created, { ownerId: legacy.ownerId, walkerId: legacy.walkerId, petIds: legacy.petIds,
+    scheduledAt: legacy.scheduledAt, durationMinutes: legacy.durationMinutes, status: 'SCHEDULED',
+    startedAt: null, finishedAt: null, distanceKm: null, observations: legacy.observations });
+  assert.deepEqual(update, { collection: 'walkRequests', id: 'request-1', data: { status: 'ACCEPTED' } });
+});
+
+it('iniciar y finalizar leen solamente el paseo y actualizan los mismos campos que Kotlin', async () => {
+  let data: Record<string, unknown> = { ...request, status: 'SCHEDULED', startedAt: null, finishedAt: null, distanceKm: null };
+  const reads: string[] = [], updates: Record<string, unknown>[] = [];
+  const port: WalkExecutionTransaction = {
+    async get(collection, id) { reads.push(`${collection}/${id}`); if (collection !== 'walks') throw { code: 'permission-denied' }; return data; },
+    setWalk() { assert.fail('El paseo existente no se debe reemplazar'); },
+    update(collection, id, fields) { assert.equal(collection, 'walks'); updates.push(fields); data = { ...data, ...fields }; },
+  };
+  await updateWalkTransaction(port, 'walker-1', 'request-1', 'start', () => start);
+  await updateWalkTransaction(port, 'walker-1', 'request-1', 'complete', () => start + 1800000);
+  assert.deepEqual(reads, ['walks/request-1', 'walks/request-1']);
+  assert.deepEqual(updates, [{ status: 'IN_PROGRESS', startedAt: new Date(start).toISOString() },
+    { status: 'COMPLETED', finishedAt: new Date(start + 1800000).toISOString() }]);
+});
+
 it('una aceptación repetida o concurrente no crea otro paseo ni reinicia el existente', async () => {
   const db = backend(), first = db.client(), second = db.client();
   const results = await Promise.all([first.execution.accept(walker, 'request-1'), second.execution.accept(walker, 'request-1')]);
@@ -138,7 +185,7 @@ it('iniciar y finalizar guardan horarios ISO y los reintentos conservan los hora
   assert.equal((await client.execution.start(walker, 'request-1')).ok, false);
 });
 
-it('el dueño, otra cuenta o una cuenta desactivada no pueden ejecutar paseos ajenos', async () => {
+it('el dueño u otra cuenta no pueden ejecutar paseos ajenos', async () => {
   const db = backend(), client = db.client();
   for (const session of [owner, { status: 'signed-out' }] as const) {
     assert.equal((await client.execution.accept(session, 'request-1')).ok, false);
@@ -150,10 +197,7 @@ it('el dueño, otra cuenta o una cuenta desactivada no pueden ejecutar paseos aj
   assert.equal((await client.execution.accept(other, 'request-1')).ok, false);
   await client.execution.accept(walker, 'request-1');
   assert.equal((await client.execution.start(other, 'request-1')).ok, false);
-  db.put('users/walker-1', { role: 'WALKER', active: false });
-  assert.equal((await client.execution.start(walker, 'request-1')).ok, false);
-  db.put('users/walker-1', { role: 'OWNER', active: true });
-  assert.equal((await client.repository.startWalk('walker-1', 'request-1')).ok, false);
+  assert.equal((await client.execution.start(owner, 'request-1')).ok, false);
   assert.equal(db.get('walks/request-1')?.status, 'SCHEDULED');
 });
 
