@@ -15,7 +15,10 @@ import type { WalkBookingDataSource } from '../core/data/datasources/walk-bookin
 import { WalkBookingRepositoryImpl } from '../core/data/repositories/walk-booking-repository-impl';
 import { createWalkBookingUseCases } from '../core/domain/use-cases/walk-booking-use-cases';
 import { createWalkExecutionUseCases } from '../core/domain/use-cases/walk-execution-use-cases';
-export function createApplication(authSource: AuthDataSource, ownerSource?: OwnerDashboardDataSource, walkerSource?: WalkerDashboardDataSource, petSource?: PetDataSource, bookingSource?: WalkBookingDataSource) {
+import type { WalkLocationRepository } from '../core/domain/repositories/walk-location-repository';
+import type { LocationCaptureRepository } from '../core/domain/repositories/location-capture-repository';
+import { createWalkTrackingUseCases } from '../core/domain/use-cases/walk-tracking-use-cases';
+export function createApplication(authSource: AuthDataSource, ownerSource?: OwnerDashboardDataSource, walkerSource?: WalkerDashboardDataSource, petSource?: PetDataSource, bookingSource?: WalkBookingDataSource, locations?: WalkLocationRepository, capture?: LocationCaptureRepository) {
   const auth = new AuthRepositoryImpl(authSource);
   const booking = bookingSource ? new WalkBookingRepositoryImpl(bookingSource) : null;
   return {
@@ -25,6 +28,7 @@ export function createApplication(authSource: AuthDataSource, ownerSource?: Owne
     pets: petSource ? createPetUseCases(new PetRepositoryImpl(petSource)) : null,
     booking: booking ? createWalkBookingUseCases(booking) : null,
     walkExecution: booking ? createWalkExecutionUseCases(booking) : null,
+    tracking: locations && capture ? createWalkTrackingUseCases(locations, capture) : null,
   };
 }
 export type Application = ReturnType<typeof createApplication>;

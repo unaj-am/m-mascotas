@@ -15,11 +15,12 @@ Aplicación para la gestión de mascotas y paseos, con perfiles de dueño y pase
 - Aceptación de solicitudes por el paseador, con creación del paseo programado.
 - Inicio y finalización de paseos, horarios reales, tiempo transcurrido e historial.
 - Estados de los paseos actualizados en tiempo real en Android y web para ambos usuarios.
+- Seguimiento GPS del paseador, mapa en vivo e historial del recorrido compartidos con la app Kotlin.
 - Panel de paseador con disponibilidad, resumen de actividad, solicitudes, agenda y perfil profesional.
 - Persistencia y cierre de sesión.
 - Validación del perfil y del estado de la cuenta en Firestore.
 
-El proyecto se encuentra en desarrollo. La edición y eliminación de mascotas, la carga de fotos, el rechazo y cancelación de solicitudes, la cancelación de paseos, el seguimiento por GPS y las notificaciones están pendientes de implementación.
+El proyecto se encuentra en desarrollo. La edición y eliminación de mascotas, la carga de fotos, el rechazo y cancelación de solicitudes, la cancelación de paseos y las notificaciones generales están pendientes de implementación.
 
 ## Tecnologías
 
@@ -69,7 +70,17 @@ Las reglas deben permitir consultar los perfiles públicos disponibles de `walke
 
 El paseador puede **Aceptar paseo** desde sus solicitudes. Una transacción marca la solicitud como `ACCEPTED` y crea `walks/{requestId}` en estado `SCHEDULED`. La misma solicitud genera un solo paseo; volver a aceptar una solicitud aceptada conserva el paseo existente. La transacción sigue el contrato de la app Kotlin: lee la solicitud y su paseo, conserva la fecha y las observaciones originales y crea los campos `startedAt`, `finishedAt` y `distanceKm` con valor `null`.
 
-En **Agenda → Programados**, **Iniciar paseo** cambia el estado a `IN_PROGRESS` y registra `startedAt`. En **En curso**, **Finalizar paseo** guarda `COMPLETED` y `finishedAt`; el paseo queda en **Historial**. Los horarios usan cadenas ISO compatibles con la app nativa. El contador se calcula desde el horario guardado y se recupera al volver a abrir la app. No registra ubicación ni distancia recorrida.
+En el panel de dueño, las solicitudes aceptadas dejan de aparecer en **Mis solicitudes** y se muestran como paseos confirmados. Su etiqueta cambia en tiempo real: **Confirmado → En curso → Finalizado**, según el estado del paseo. La solicitud conserva `ACCEPTED` como registro de su aceptación, igual que en la app nativa.
+
+En **Agenda → Programados**, **Iniciar paseo** solicita los permisos de ubicación, cambia el estado a `IN_PROGRESS`, registra `startedAt` y activa la captura GPS. En **En curso**, **Finalizar paseo** guarda `COMPLETED` y `finishedAt` y detiene el GPS; el paseo queda en **Historial**. Los horarios usan cadenas ISO compatibles con la app nativa. El contador se calcula desde el horario guardado y se recupera al volver a abrir la app.
+
+El dueño abre **Ver seguimiento** desde Inicio o Paseos. Si el paseo todavía está confirmado, la pantalla espera a que comience; durante el paseo muestra la última ubicación y los puntos del recorrido; al finalizar permite **Ver recorrido**. No solicita el GPS del dueño. Los paseos en curso aparecen primero, antes de solicitudes anteriores.
+
+El GPS conserva las rutas y los campos de Kotlin: `walks/{id}/tracking/current` y `walks/{id}/locations/{pointId}`, con `latitude`, `longitude`, `accuracy`, `bearing`, `speed` y `recordedAt` en milisegundos. La última ubicación y el punto histórico se guardan en el mismo lote. Solo publica el paseador asignado mientras el paseo está en curso. El filtro descarta precisión peor que 35 m, puntos fuera de orden y movimientos pequeños, con una actualización al menos cada 30 segundos cuando hay señal válida. El mapa utiliza MapLibre y OpenFreeMap sin clave de Google Maps. La línea representa puntos GPS reales; los huecos largos o saltos de señal quedan separados. No realiza ajuste de ruta OSRM ni guarda distancia calculada.
+
+**Android:** requiere una nueva compilación de desarrollo con `expo-location`, `expo-task-manager`, AsyncStorage y WebView. Al iniciar el paseo se pide ubicación precisa y en segundo plano. Mientras comparte ubicación muestra una notificación de servicio; continúa al usar otras aplicaciones y se detiene al finalizar, cerrar sesión o terminar la aplicación desde Android. Si se pierde el seguimiento, **Compartir ubicación** permite reactivarlo en el paseo en curso.
+
+**Web:** consultar el mapa no necesita ubicación local. Para publicar como paseador se requiere HTTPS o localhost, permiso del navegador y mantener la pestaña abierta. El navegador puede suspender el GPS al pasar a segundo plano. El mapa necesita conexión para cargar su estilo y cartografía. Las reglas de Firestore siguen siendo las mismas de la app nativa.
 
 Las reglas deben limitar la aceptación al paseador destinatario y validar conjuntamente la actualización de la solicitud y la creación del paseo. El inicio y la finalización se permiten solo al paseador asignado, con transiciones `SCHEDULED → IN_PROGRESS → COMPLETED`; dueño y paseador consultan sus propios paseos. Estas operaciones requieren conexión y no publican cambios en las reglas del proyecto.
 

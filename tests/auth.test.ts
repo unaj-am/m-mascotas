@@ -109,6 +109,20 @@ it('la revalidación reconoce un correo verificado sin volver a ingresar', async
   assert.deepEqual(last(f.events), success({ kind: 'authorized', uid: 'owner', role: 'OWNER' }));
   f.stop();
 });
+it('volver de los permisos GPS mantiene el panel del mismo usuario y oculta una cuenta distinta al cambiar sesión', async () => {
+  const f = fixture(user('walker')); await tick();
+  const pending = deferred<unknown>();
+  f.gateway.getProfileFromServer = async (uid) => uid === 'walker' ? pending.promise : { role: 'OWNER', active: true };
+  const count = f.events.length;
+  const refresh = f.source.refreshSession(); await tick();
+  assert.deepEqual(last(f.events), success({ kind: 'authorized', uid: 'walker', role: 'WALKER' }));
+  assert.ok(!f.events.slice(count).some((event) => event.ok && event.value.kind === 'loading'));
+  f.changeUser(user('owner'));
+  assert.deepEqual(last(f.events), success({ kind: 'loading' }));
+  await tick(); pending.resolve({ role: 'WALKER', active: true }); await refresh;
+  assert.deepEqual(last(f.events), success({ kind: 'authorized', uid: 'owner', role: 'OWNER' }));
+  f.stop();
+});
 it('rechaza perfiles ausentes, roles desconocidos y cuentas inactivas; no crea documentos', async () => {
   for (const profile of [null, { role: 'ADMIN', active: true }, { role: 'OWNER', active: false }, { role: 'OWNER', active: 'true' }]) {
     const f = fixture();

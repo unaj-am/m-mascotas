@@ -26,7 +26,9 @@ export function createFirebaseAuthDataSource(gateway: FirebaseAuthGateway): Auth
     profileSubscription = undefined;
     const alive = () => current === version && observers.size > 0;
     if (!identity) { emit(success({ kind: 'signed-out' })); return success(undefined); }
-    emit(success({ kind: 'loading' }));
+    // Revalidar al volver de Ajustes de GPS no debe desmontar el paseo activo.
+    // Una cuenta distinta sigue entrando en loading para no mostrar datos del usuario anterior.
+    if (!latest.ok || latest.value.kind !== 'authorized' || latest.value.uid !== identity.uid) emit(success({ kind: 'loading' }));
     try {
       const user = await gateway.reloadUser(identity.uid);
       if (!alive()) return success(undefined);

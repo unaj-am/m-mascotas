@@ -16,6 +16,7 @@ export function ApplicationProvider({ children, application = null }: PropsWithC
     store.setState({ session: { status: 'loading' } });
     const unsubscribe = application.observeSession((result) => {
       if (active) store.setState({ session: result.ok ? result.value : { status: 'error', error: result.error } });
+      if (!result.ok || result.value.status === 'signed-out' || result.value.status === 'needs-verification' || (result.value.status === 'authenticated' && result.value.role !== 'WALKER')) void application.tracking?.stopAll();
     });
     const foreground = AppState.addEventListener('change', (state) => {
       if (state === 'active' && store.getState().session.status !== 'signed-out') void application.auth.refreshSession();
@@ -44,3 +45,4 @@ export function useWalkerDashboardActions() { return useApplicationContext().app
 export function usePetActions() { return useApplicationContext().application?.pets ?? null; }
 export function useWalkBookingActions() { return useApplicationContext().application?.booking ?? null; }
 export function useWalkExecutionActions() { return useApplicationContext().application?.walkExecution ?? null; }
+export function useWalkTrackingActions() { return useApplicationContext().application?.tracking ?? null; }
