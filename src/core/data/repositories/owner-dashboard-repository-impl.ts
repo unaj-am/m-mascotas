@@ -26,6 +26,7 @@ function walk(document: DashboardDocument, uid: string): OwnerWalkSummary {
     id: document.id, status: value.status as OwnerWalkSummary['status'], scheduledAt: timestamp(value.scheduledAt),
     petIds: Array.isArray(value.petIds) ? value.petIds.filter((id): id is string => typeof id === 'string') : [],
     durationMinutes: nonnegative(value.durationMinutes),
+    startedAt: timestamp(value.startedAt), finishedAt: timestamp(value.finishedAt),
   };
 }
 

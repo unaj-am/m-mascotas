@@ -1,12 +1,19 @@
 import { DashboardShell, DashboardAvatar } from '../components/dashboard-shell';
 import { useState } from 'react';
-import { ActivityIndicator, Image, Pressable, Text, useWindowDimensions, View } from 'react-native';
+import { ActivityIndicator, Pressable, Text, useWindowDimensions, View } from 'react-native';
 import { summarizeOwnerDashboard, type OwnerDashboard, type OwnerPetSummary, type OwnerWalkSummary } from '../../../../core/domain/entities/owner-dashboard';
 import { useOwnerDashboard } from '../hooks/use-owner-dashboard';
 import { DashboardIcon, type DashboardIconName } from '../components/dashboard-icon';
 import { colors, styles as s } from './owner-home.styles';
+import { usePets } from '../../../pets/presentation/hooks/use-pets';
+import { PetsScreen } from '../../../pets/presentation/screens/pets-screen';
+import { WalkerSearchScreen } from '../../../walkers/presentation/screens/walker-search-screen';
+import { useBookingRequests } from '../../../walks/presentation/hooks/use-booking-requests';
+import { BookingRequestList } from '../../../walks/presentation/components/booking-request-list';
+import { useWalks } from '../../../walks/presentation/hooks/use-walks';
+import { WalkTiming } from '../../../walks/presentation/components/walk-timing';
 
-type Tab = 'home' | 'pets' | 'walks' | 'profile';
+type Tab = 'home' | 'pets' | 'walks' | 'profile' | 'walkers';
 const tabs: readonly { id: Tab; label: string; icon: DashboardIconName }[] = [
   { id: 'home', label: 'Inicio', icon: 'home' }, { id: 'pets', label: 'Mascotas', icon: 'paw' },
   { id: 'walks', label: 'Paseos', icon: 'calendar' }, { id: 'profile', label: 'Perfil', icon: 'user' },
@@ -20,14 +27,6 @@ function TextLink({ title, onPress }: { title: string; onPress: () => void }) {
   return <Pressable accessibilityRole="button" onPress={onPress} style={({ pressed }) => [s.textLink, pressed && s.muted]}>
     <Text style={s.textLinkLabel}>{title}</Text><DashboardIcon name="arrow" size={16} />
   </Pressable>;
-}
-function PetPortrait({ pet }: { pet: OwnerPetSummary }) {
-  const [failedUri, setFailedUri] = useState<string | null>(null);
-  return <View style={s.petPhoto}>
-    {pet.photoUri && failedUri !== pet.photoUri
-      ? <Image source={{ uri: pet.photoUri }} accessibilityLabel={`Foto de ${pet.name}`} style={s.image} onError={() => setFailedUri(pet.photoUri)} />
-      : <DashboardIcon name="paw" size={26} color={colors.primary} />}
-  </View>;
 }
 function EmptyState({ icon, title, description }: { icon: DashboardIconName; title: string; description: string }) {
   return <View style={s.empty}>
@@ -45,9 +44,10 @@ function WalkCard({ walk, pets }: { walk: OwnerWalkSummary; pets: readonly Owner
       <Text style={s.walkTime}>{[timeLabel(walk.scheduledAt), walk.durationMinutes !== null ? `${walk.durationMinutes} minutos` : null].filter(Boolean).join(' · ') || 'Horario a confirmar'}</Text></View>
     <View style={s.divider} />
     <View style={s.detailLine}><DashboardIcon name="paw" size={18} /><Text style={s.detailText}>{petNames(walk, pets)}</Text></View>
+    <WalkTiming walk={walk} variant="owner" />
   </View>;
 }
-function HomeContent({ data, compact, navigate }: { data: OwnerDashboard; compact: boolean; navigate: (tab: Tab) => void }) {
+function HomeContent({ data, compact, navigate, onSearch }: { data: OwnerDashboard; compact: boolean; navigate: (tab: Tab) => void; onSearch: () => void }) {
   const summary = summarizeOwnerDashboard(data);
   const next = summary.nextWalk;
   const nextPet = next ? data.pets.find((pet) => next.petIds.includes(pet.id)) : null;
@@ -78,33 +78,24 @@ function HomeContent({ data, compact, navigate }: { data: OwnerDashboard; compac
         <TextLink title="Ver mis paseos" onPress={() => navigate('walks')} />
       </> : <View><Text style={s.emptyTitleLeft}>Todavía no tenés paseos programados</Text>
         <Text style={s.subtitle}>Encontrá un paseador de confianza y organizá el próximo paseo de tu mascota.</Text></View>}
-      <Pressable disabled accessibilityRole="button" accessibilityState={{ disabled: true }} style={[s.button, s.primary, s.unavailable]} accessibilityLabel="Buscar paseador. Disponible próximamente.">
+      <Pressable accessibilityRole="button" onPress={onSearch} style={[s.button, s.primary]} accessibilityLabel="Buscar paseador">
         <Text style={s.primaryText}>{next ? 'Buscar otro paseador' : 'Buscar paseador'}</Text>
       </Pressable>
-      <Text style={s.notice}>La búsqueda de paseadores estará disponible próximamente.</Text>
     </View>
   </>;
 }
-function PetsContent({ pets }: { pets: readonly OwnerPetSummary[] }) {
-  return <>
-    {pets.length ? pets.map((pet) => <View key={pet.id} style={s.petTile}>
-      <PetPortrait pet={pet} /><View style={{ flex: 1 }}><Text style={s.petName}>{pet.name}</Text><Text style={s.petDetail}>{[pet.breed, pet.age !== null ? `${pet.age} ${pet.age === 1 ? 'año' : 'años'}` : ''].filter(Boolean).join(' · ') || 'Compañero de aventuras'}</Text></View>
-    </View>) : <View style={s.surface}><EmptyState icon="paw" title="Tus mascotas van a estar acá" description="Aún no hay mascotas registradas en tu cuenta." /></View>}
-    <Text style={s.notice}>El alta y la edición de mascotas estarán disponibles próximamente.</Text>
-  </>;
-}
-function WalksContent({ data }: { data: OwnerDashboard }) {
+function WalksContent({ walks: allWalks, pets }: { walks: readonly OwnerWalkSummary[]; pets: readonly OwnerPetSummary[] }) {
   const [filter, setFilter] = useState<'all' | 'scheduled' | 'completed'>('all');
-  const walks = data.walks.filter((walk) => filter === 'all' || (filter === 'scheduled' ? ['SCHEDULED', 'IN_PROGRESS'].includes(walk.status) : walk.status === 'COMPLETED'));
+  const walks = allWalks.filter((walk) => filter === 'all' || (filter === 'scheduled' ? ['SCHEDULED', 'IN_PROGRESS'].includes(walk.status) : walk.status === 'COMPLETED'));
   return <>
     <View style={s.filters}>{([{ id: 'all', label: 'Todos' }, { id: 'scheduled', label: 'Programados y en curso' }, { id: 'completed', label: 'Completados' }] as const).map((item) =>
       <Pressable key={item.id} accessibilityRole="button" accessibilityState={{ selected: filter === item.id }} onPress={() => setFilter(item.id)} style={[s.filter, filter === item.id && s.filterActive]}>
         <Text style={[s.filterText, filter === item.id && s.filterTextActive]}>{item.label}</Text>
       </Pressable>)}</View>
-    {walks.length ? walks.map((walk) => <WalkCard key={walk.id} walk={walk} pets={data.pets} />) : <View style={s.surface}>
+    {walks.length ? walks.map((walk) => <WalkCard key={walk.id} walk={walk} pets={pets} />) : <View style={s.surface}>
       <EmptyState icon="calendar" title="Sin paseos para mostrar" description="Los paseos de esta categoría van a aparecer acá cuando estén disponibles." />
     </View>}
-    <Text style={s.notice}>La búsqueda de paseadores y las nuevas solicitudes estarán disponibles próximamente.</Text>
+    <Text style={s.notice}>Los paseos aparecerán cuando una solicitud sea aceptada.</Text>
   </>;
 }
 function ProfileContent({ data }: { data: OwnerDashboard }) {
@@ -124,23 +115,44 @@ export function OwnerHomeScreen() {
   const compact = width < 760;
   const [tab, setTab] = useState<Tab>('home');
   const { state, reload } = useOwnerDashboard();
-  const data = state.status === 'ready' ? state.data : null;
+  const pets = usePets();
+  const requests = useBookingRequests('owner');
+  const walks = useWalks('owner');
+  const [requestSent, setRequestSent] = useState(false);
+  const data = state.status === 'ready' ? { ...state.data, pets: pets.state.status === 'ready' ? pets.state.data.items : state.data.pets,
+    walks: walks.state.status === 'ready' ? walks.state.data.items : state.data.walks } : null;
   const name = data?.name || '';
   function navigate(next: Tab) { setTab(next); }
-  const title = tab === 'home' ? name || 'Bienvenido' : tab === 'pets' ? 'Mis mascotas' : tab === 'walks' ? 'Mis paseos' : 'Mi perfil';
+  function search() { setRequestSent(false); navigate('walkers'); }
+  const independent = tab === 'pets' || tab === 'walkers' || tab === 'walks';
+  const title = tab === 'home' ? name || 'Bienvenido' : tab === 'pets' ? 'Mis mascotas' : tab === 'walks' ? 'Mis paseos' : tab === 'walkers' ? 'Buscar paseador' : 'Mi perfil';
   const description = {
     home: '¿Listos para el próximo paseo?',
     pets: 'Tus compañeros de todos los días, en un solo lugar.',
     walks: 'Consultá lo que viene y recordá sus aventuras anteriores.',
     profile: 'Los datos de tu cuenta de Mascotas.',
+    walkers: 'Encontrá un paseador disponible y organizá el próximo paseo.',
   }[tab];
   return <DashboardShell variant="owner" tabs={tabs} activeTab={tab} onTabChange={navigate}
     name={name} profileImage={data?.profileImage ?? null} title={title} subtitle={description}
-    loading={state.status === 'loading'} onRefresh={() => { void reload(); }}>
-    {state.status === 'loading' && <View style={[s.surface, s.busySurface]}><ActivityIndicator color={colors.primary} /><Text accessibilityLiveRegion="polite" style={s.busyText}>Buscando tus mascotas y paseos…</Text></View>}
-    {state.status === 'error' && <View style={s.surface}><EmptyState icon="refresh" title="No pudimos cargar tus datos" description={state.message} />
+    loading={tab === 'pets' ? pets.state.status === 'loading' : tab === 'walks' ? walks.state.status === 'loading' : !independent && state.status === 'loading'} refreshDisabled={tab === 'walkers'} onRefresh={() => { if (tab === 'pets') pets.retry(); else { pets.retry(); requests.retry(); walks.retry(); void reload(); } }}>
+    {tab === 'pets' && <PetsScreen key={pets.uid} catalog={pets} />}
+    {tab === 'walkers' && <WalkerSearchScreen key={pets.uid} pets={pets} onBack={() => navigate('home')} onPets={() => navigate('pets')} onSent={() => { setRequestSent(true); navigate('walks'); }} />}
+    {tab === 'walks' && <>
+      <Pressable accessibilityRole="button" onPress={search} style={[s.button, s.primary]}><Text style={s.primaryText}>Buscar paseador</Text></Pressable>
+      {requestSent && <Text accessibilityLiveRegion="polite" style={[s.notice, { color: colors.primaryDark }]}>Tu solicitud se envió correctamente. Está pendiente de la respuesta del paseador.</Text>}
+      <BookingRequestList requests={requests} />
+      <Text accessibilityRole="header" style={s.sectionTitle}>Paseos confirmados</Text>
+      {walks.state.status === 'loading' && <View style={s.surface}><ActivityIndicator color={colors.primary} /><Text style={s.notice}>Buscando tus paseos…</Text></View>}
+      {walks.state.status === 'ready' && <WalksContent walks={walks.state.data.items} pets={pets.state.status === 'ready' ? pets.state.data.items : data?.pets ?? []} />}
+    </>}
+    {!independent && state.status === 'loading' && <View style={[s.surface, s.busySurface]}><ActivityIndicator color={colors.primary} /><Text accessibilityLiveRegion="polite" style={s.busyText}>Buscando tus mascotas y paseos…</Text></View>}
+    {!independent && state.status === 'error' && <View style={s.surface}><EmptyState icon="refresh" title="No pudimos cargar tus datos" description={state.message} />
       <Pressable accessibilityRole="button" onPress={() => { void reload(); }} style={[s.button, s.primary]}><Text style={s.primaryText}>Volver a intentar</Text></Pressable>
     </View>}
-    {data && (tab === 'home' ? <HomeContent data={data} compact={compact} navigate={navigate} /> : tab === 'pets' ? <PetsContent pets={data.pets} /> : tab === 'walks' ? <WalksContent data={data} /> : <ProfileContent data={data} />)}
+    {tab === 'home' && pets.state.status === 'error' && <Text style={s.notice}>El resumen de mascotas puede estar desactualizado. Entrá a Mascotas para volver a conectarte.</Text>}
+    {(tab === 'home' || tab === 'walks') && walks.state.status === 'error' && <View style={s.surface}><Text accessibilityRole="alert" style={s.notice}>No pudimos actualizar tus paseos: {walks.state.message}</Text><Pressable accessibilityRole="button" onPress={walks.retry} style={s.textLink}><Text style={s.textLinkLabel}>Volver a intentar</Text></Pressable></View>}
+    {(tab === 'home' || tab === 'walks') && walks.state.status === 'ready' && (walks.state.data.fromCache || walks.state.data.pendingWrites) && <Text style={s.notice}>Los paseos muestran una copia guardada o cambios pendientes de confirmación.</Text>}
+    {!independent && data && (tab === 'home' ? <HomeContent data={data} compact={compact} navigate={navigate} onSearch={search} /> : <ProfileContent data={data} />)}
   </DashboardShell>;
 }

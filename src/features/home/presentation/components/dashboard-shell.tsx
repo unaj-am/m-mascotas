@@ -55,7 +55,7 @@ export function DashboardShell<T extends string>({ variant, tabs, activeTab, onT
           onPress={logout} style={s.logoutButton}>{operation.busy ? <ActivityIndicator color={colors.primary} /> : <DashboardIcon name="logout" color={colors.primary} />}<Text style={s.logoutText}>Salir</Text></Pressable>
       </View>
     </View></View>}
-    <ScrollView ref={scroll} style={s.scroll} contentContainerStyle={[s.content, compact && s.contentCompact]}>
+    <ScrollView ref={scroll} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag" style={s.scroll} contentContainerStyle={[s.content, compact && s.contentCompact]}>
       <View style={s.introduction}>
         {home && <DashboardAvatar name={name} uri={profileImage} variant={variant} />}
         <View style={{ flex: 1 }}>{home && <Text style={s.eyebrow}>{variant === 'walker' ? 'PANEL DE PASEADOR' : 'HOLA DE NUEVO'}</Text>}

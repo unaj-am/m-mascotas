@@ -6,6 +6,7 @@ export type OwnerPetSummary = Readonly<{
 export type OwnerWalkSummary = Readonly<{
   id: string; petIds: readonly string[]; status: WalkStatus; scheduledAt: number | null;
   durationMinutes: number | null;
+  startedAt?: number | null; finishedAt?: number | null;
 }>;
 export type OwnerDashboard = Readonly<{
   name: string; lastName: string; email: string; phone: string; profileImage?: string | null;

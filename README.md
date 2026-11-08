@@ -9,11 +9,17 @@ Aplicación para la gestión de mascotas y paseos, con perfiles de dueño y pase
 - Recuperación de contraseña y verificación de correo electrónico.
 - Acceso a paneles según el rol: dueño (`OWNER`) o paseador (`WALKER`).
 - Panel de dueño con resumen de actividad, próximo paseo y consulta de mascotas, paseos y perfil.
+- Registro de mascotas y listado en tiempo real, compartido entre Android y web.
+- Búsqueda de paseadores disponibles por zona o descripción y envío de solicitudes de paseo.
+- Solicitudes compartidas en tiempo real entre dueño y paseador.
+- Aceptación de solicitudes por el paseador, con creación del paseo programado.
+- Inicio y finalización de paseos, horarios reales, tiempo transcurrido e historial.
+- Estados de los paseos actualizados en tiempo real en Android y web para ambos usuarios.
 - Panel de paseador con disponibilidad, resumen de actividad, solicitudes, agenda y perfil profesional.
 - Persistencia y cierre de sesión.
 - Validación del perfil y del estado de la cuenta en Firestore.
 
-El proyecto se encuentra en desarrollo. El alta y edición de mascotas, la búsqueda de paseadores, la creación y resolución de solicitudes, el inicio y finalización de paseos, el seguimiento y las notificaciones están pendientes de implementación.
+El proyecto se encuentra en desarrollo. La edición y eliminación de mascotas, la carga de fotos, el rechazo y cancelación de solicitudes, la cancelación de paseos, el seguimiento por GPS y las notificaciones están pendientes de implementación.
 
 ## Tecnologías
 
@@ -50,6 +56,22 @@ EXPO_PUBLIC_FIREBASE_WEB_APP_ID=
 ```
 
 El acceso utiliza el proyecto `mascotas-5d228`. Cada cuenta debe tener un documento `users/{uid}` con rol `OWNER` o `WALKER`. Las cuentas con `active: false` no pueden acceder a los paneles.
+
+En el panel de dueño, **Mascotas → Registrar mascota** permite guardar nombre, raza, edad, peso, tamaño, comportamiento, necesidades especiales y observaciones. Nombre, edad y peso son obligatorios. Las mascotas se guardan en `pets` con el `ownerId` de la sesión; el listado escucha los cambios de Firestore. Al usar la misma cuenta y proyecto Firebase en Android y web, los cambios aparecen sin recargar. El alta requiere conexión y se confirma cuando el servidor acepta el guardado.
+
+Las reglas de Firestore deben permitir al dueño consultar `users/{uid}`, listar sus mascotas por `ownerId` y crear mascotas con su propio `ownerId`. Los adaptadores no modifican las reglas del proyecto.
+
+**Buscar paseador** abre el directorio de perfiles profesionales disponibles en `walkers` (`available: true`). Tener una cuenta de tipo paseador no crea por sí solo ese perfil. Las tarjetas muestran zona de servicio, descripción, experiencia, capacidad, precio y calificación sin consultar los documentos privados de otros usuarios.
+
+Para solicitar un paseo se seleccionan las mascotas, una fecha futura, el horario local, la duración y las observaciones. El guardado verifica la disponibilidad y capacidad del paseador y la pertenencia de las mascotas. La solicitud se guarda como `PENDING` en `walkRequests`, con la fecha en formato ISO y los nombres necesarios para mostrarla. El dueño la consulta en **Paseos → Mis solicitudes** y el paseador en **Solicitudes**. Enviar una solicitud todavía no crea un paseo confirmado.
+
+Las reglas deben permitir consultar los perfiles públicos disponibles de `walkers`, crear solicitudes con el `ownerId` autenticado y estado `PENDING`, y consultar las solicitudes únicamente por el dueño o paseador correspondiente. Los listados usan filtros por `ownerId` y `walkerId`. El alta se realiza en una transacción y requiere conexión.
+
+El paseador puede **Aceptar paseo** desde sus solicitudes. Una transacción marca la solicitud como `ACCEPTED` y crea `walks/{requestId}` en estado `SCHEDULED`. La misma solicitud genera un solo paseo; volver a aceptar una solicitud aceptada conserva el paseo existente. La lectura del documento de paseo todavía inexistente debe estar permitida para el paseador destinatario al realizar esta transacción, sin dar acceso a paseos ajenos.
+
+En **Agenda → Programados**, **Iniciar paseo** cambia el estado a `IN_PROGRESS` y registra `startedAt`. En **En curso**, **Finalizar paseo** guarda `COMPLETED` y `finishedAt`; el paseo queda en **Historial**. Los horarios usan cadenas ISO compatibles con la app nativa. El contador se calcula desde el horario guardado y se recupera al volver a abrir la app. No registra ubicación ni distancia recorrida.
+
+Las reglas deben limitar la aceptación al paseador destinatario y validar conjuntamente la actualización de la solicitud y la creación del paseo. El inicio y la finalización se permiten solo al paseador asignado, con transiciones `SCHEDULED → IN_PROGRESS → COMPLETED`; dueño y paseador consultan sus propios paseos. Estas operaciones requieren conexión y no publican cambios en las reglas del proyecto.
 
 El panel de paseador consulta sus solicitudes y paseos por `walkerId`. El cambio de disponibilidad requiere un perfil profesional existente en `walkers/{uid}` y actualiza únicamente su campo `available`. La creación y edición de ese perfil todavía no están implementadas.
 
@@ -134,6 +156,8 @@ Cada módulo de `features` contiene su capa `presentation`, con pantallas, compo
 | `AuthRepository` — `auth-repository.ts` | `AuthRepositoryImpl` — `auth-repository-impl.ts` |
 | `OwnerDashboardRepository` — `owner-dashboard-repository.ts` | `OwnerDashboardRepositoryImpl` — `owner-dashboard-repository-impl.ts` |
 | `WalkerDashboardRepository` — `walker-dashboard-repository.ts` | `WalkerDashboardRepositoryImpl` — `walker-dashboard-repository-impl.ts` |
+| `PetRepository` — `pet-repository.ts` | `PetRepositoryImpl` — `pet-repository-impl.ts` |
+| `WalkBookingRepository` — `walk-booking-repository.ts` | `WalkBookingRepositoryImpl` — `walk-booking-repository-impl.ts` |
 
 Los contratos declaran **qué operaciones existen**. Las clases con sufijo `Impl` definen **cómo se ejecutan**, implementando la interfaz y delegando en las fuentes de datos. Los contratos de los módulos pendientes se conservan en el dominio; sus implementaciones se agregarán cuando se desarrollen esas funcionalidades.
 

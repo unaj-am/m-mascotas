@@ -7,3 +7,5 @@ export type WalkRequest = Readonly<{
 export type CreateWalkRequest = Pick<WalkRequest,
   'id' | 'ownerId' | 'walkerId' | 'petIds' | 'scheduledAt' | 'durationMinutes' | 'observations' | 'status'
 >;
+export type WalkRequestDraft = Readonly<Omit<CreateWalkRequest, 'ownerId' | 'status'>>;
+export type RequestSide = 'owner' | 'walker';

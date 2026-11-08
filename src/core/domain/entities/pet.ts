@@ -13,3 +13,10 @@ export type Pet = Readonly<{
   behavior: string;
   specialNeeds: string;
 }>;
+
+export type PetDraft = Readonly<Omit<Pet, 'ownerId' | 'photoUri'>>;
+export type PetList = Readonly<{
+  items: readonly Pet[];
+  fromCache: boolean;
+  pendingWrites: boolean;
+}>;
