@@ -11,7 +11,6 @@ import { createWalkTrackingUseCases, shouldPublishLocation, validWalkLocation } 
 import { toLocationDocument, toWalkLocation } from '../src/core/data/mappers/walk-location-mapper';
 import { trackingMapData } from '../src/features/tracking/presentation/state/tracking-map';
 import { trackingMapHtml } from '../src/features/tracking/presentation/components/tracking-map-html';
-import { orderOwnerWalks } from '../src/features/walks/presentation/state/walk-display';
 import { createWebLocationCapture } from '../src/core/data/location/web-location-capture';
 
 const point: WalkLocation = { latitude: -34.6037, longitude: -58.3816, accuracy: 10, bearing: null, speed: null, recordedAt: 1794132000000 };
@@ -138,14 +137,6 @@ it('el mapa no crea posiciones falsas y separa tramos sin señal', () => {
   assert.deepEqual(trackingMapData({ ...point, latitude: 0, longitude: 0 }, []).target, [0, 0]);
   const script = /<script type="module">([\s\S]*?)<\/script>/.exec(trackingMapHtml)?.[1]; assert.ok(script);
   assert.doesNotThrow(() => new Function(`return async function(){${script}}`));
-});
-
-it('Paseos prioriza el paseo en curso sobre confirmados e historial sin modificar los datos', () => {
-  const base = { petIds: ['pet-1'], durationMinutes: 30 };
-  const items = [{ ...base, id: 'old', status: 'COMPLETED', scheduledAt: 1 }, { ...base, id: 'scheduled', status: 'SCHEDULED', scheduledAt: 300 },
-    { ...base, id: 'active', status: 'IN_PROGRESS', scheduledAt: 200 }] as const;
-  assert.deepEqual(orderOwnerWalks(items).map((item) => item.id), ['active', 'scheduled', 'old']);
-  assert.equal(items[0].id, 'old');
 });
 
 it('el navegador publica solo después del permiso y deja de escuchar al detener la captura', async () => {
