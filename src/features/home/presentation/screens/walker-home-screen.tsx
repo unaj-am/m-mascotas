@@ -71,7 +71,7 @@ function WalkCard({ walk, execution, disabled, perform }: { walk: WalkerWalkSumm
     {walk.durationMinutes !== null && <Text style={s.walkTime}>{walk.durationMinutes} minutos</Text>}
     {!!walk.observations && <View><Text style={s.fieldLabel}>Indicaciones del paseo</Text><Text style={s.detailText}>{walk.observations}</Text></View>}
     <WalkTiming walk={walk} variant="walker" />
-    {walk.status === 'SCHEDULED' && <Text style={s.notice}>Al iniciar se pedirá permiso para compartir tu ubicación durante el paseo. En Android, permití la ubicación siempre para continuar al usar otras aplicaciones.</Text>}
+    {walk.status === 'SCHEDULED' && <Text style={s.notice}>Al iniciar, permití la ubicación precisa mientras usás Mascotas. En Android, mantené la app abierta hasta que aparezca la notificación de seguimiento; después podés usar otras aplicaciones.</Text>}
     {walk.status === 'IN_PROGRESS' && <WalkGpsStatus walkId={walk.id} disabled={execution.operation.busy} />}
     {action && <Pressable accessibilityRole="button" accessibilityState={{ disabled: disabled || execution.operation.busy, busy }} disabled={disabled || execution.operation.busy}
       onPress={() => perform(action, walk.id)} style={[s.button, s.primary, (disabled || execution.operation.busy) && s.muted]}>
