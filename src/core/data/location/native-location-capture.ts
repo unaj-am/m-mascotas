@@ -7,13 +7,13 @@ import type { WalkLocationRepository } from '../../domain/repositories/walk-loca
 import type { LocationCaptureRepository } from '../../domain/repositories/location-capture-repository';
 import { shouldPublishLocation } from '../../domain/use-cases/walk-tracking-use-cases';
 import { failure, success } from '../../../shared/types/result';
+import { nativeGpsFailure, prepareNativeLocation } from './native-location-permissions';
 
 const TASK = 'mascotas-walk-gps-v1', KEY = '@mascotas/active-walk-gps';
 type Context = { uid: string; walkId: string; captureStartedAt: number; previous: WalkLocation | null; message: string | null };
 const available = () => !!requireOptionalNativeModule('ExpoLocation') && !!requireOptionalNativeModule('ExpoTaskManager');
 const location = (): typeof import('expo-location') => require('expo-location');
 const storage = (): typeof import('@react-native-async-storage/async-storage').default => require('@react-native-async-storage/async-storage').default;
-const missing = () => failure('unavailable', 'Instalá la nueva versión de Mascotas para habilitar el GPS.');
 async function context(): Promise<Context | null> {
   const raw = await storage().getItem(KEY);
   if (!raw) return null;
@@ -71,28 +71,22 @@ export function registerNativeLocationTask(createRepository: () => WalkLocationR
   });
 }
 export function createNativeLocationCapture(): LocationCaptureRepository {
-  async function prepare() {
-    if (!available()) return missing();
-    if (!await location().hasServicesEnabledAsync()) return failure('unavailable', 'Activá la ubicación del teléfono para iniciar el paseo.');
-    const foreground = await location().requestForegroundPermissionsAsync();
-    if (!foreground.granted) return failure('forbidden', 'Permití el acceso a tu ubicación para iniciar el paseo.');
-    if (foreground.android?.accuracy === 'coarse') return failure('forbidden', 'Activá «Ubicación precisa» en los permisos de Mascotas para registrar el recorrido.');
-    const background = await location().requestBackgroundPermissionsAsync();
-    if (!background.granted) return failure('forbidden', 'Habilitá la ubicación «Permitir siempre» para compartir el recorrido mientras usás otras aplicaciones.');
-    return success(undefined);
-  }
+  const prepare = () => prepareNativeLocation(() => available() ? location() : null);
   return {
     prepare,
     async start(uid, walkId) {
       const ready = await prepare(); if (!ready.ok) return ready;
-      const previous = await context();
-      if (previous?.uid === uid && previous.walkId === walkId && await location().hasStartedLocationUpdatesAsync(TASK)) return success(undefined);
-      await stopNative(); await storage().setItem(KEY, JSON.stringify({ uid, walkId, captureStartedAt: Date.now(), previous: null, message: null } satisfies Context));
       try {
+        const previous = await context();
+        if (previous?.uid === uid && previous.walkId === walkId && await location().hasStartedLocationUpdatesAsync(TASK)) return success(undefined);
+        await stopNative(); await storage().setItem(KEY, JSON.stringify({ uid, walkId, captureStartedAt: Date.now(), previous: null, message: null } satisfies Context));
         await location().startLocationUpdatesAsync(TASK, { accuracy: location().Accuracy.High, timeInterval: 5000, distanceInterval: 0,
           pausesUpdatesAutomatically: false, foregroundService: { notificationTitle: 'Paseo en curso', notificationBody: 'Compartiendo la ubicación del paseador', killServiceOnDestroy: true } });
         return success(undefined);
-      } catch { await stopNative(); return failure('unavailable', 'No pudimos activar el GPS del paseo. Volvé a intentar compartir tu ubicación.'); }
+      } catch (error) {
+        try { await stopNative(); } catch (cleanupError) { console.warn('[GPS:limpieza]', cleanupError); }
+        return nativeGpsFailure('inicio', error);
+      }
     },
     async stop(uid) { try { return await stopNative(uid); } catch { return failure('unexpected', 'No pudimos detener el GPS. Desactivá la ubicación desde los ajustes del teléfono.'); } },
     async status(uid) {
