@@ -41,22 +41,23 @@ export function usePets() {
     if (!uid || currentUid.current !== uid || !actions) return failure('unauthenticated', 'Iniciá sesión como dueño para registrar mascotas.');
     return actions.newId({ status: 'authenticated', uid, role: 'OWNER' });
   }
-  async function create(draft: PetDraft): Promise<Result<void>> {
+  async function save(draft: PetDraft, operation: 'create' | 'update'): Promise<Result<void>> {
     if (!uid || currentUid.current !== uid || !actions) return failure('unauthenticated', 'La sesión cambió. Volvé a ingresar.');
-    if (savingUid.current) return failure('conflict', 'Esperá a que termine el registro de la mascota.');
+    if (savingUid.current) return failure('conflict', 'Esperá a que termine el guardado de la mascota.');
     savingUid.current = uid;
     setSaving(uid);
     try {
-      const result = await actions.create({ status: 'authenticated', uid, role: 'OWNER' }, draft);
-      return currentUid.current === uid ? result : failure('unauthenticated', 'La sesión cambió durante el registro.');
+      const result = await actions[operation]({ status: 'authenticated', uid, role: 'OWNER' }, draft);
+      return currentUid.current === uid ? result : failure('unauthenticated', 'La sesión cambió durante el guardado.');
     } catch {
-      return failure('unexpected', 'No pudimos registrar tu mascota. Intentá nuevamente.');
+      return failure('unexpected', 'No pudimos guardar tu mascota. Intentá nuevamente.');
     } finally {
       savingUid.current = null;
       if (mounted.current) setSaving(null);
     }
   }
-  return { uid, state: snapshot.uid === uid ? snapshot.state : { status: 'loading' } as PetState, saving: saving === uid && uid !== null, retry, newId, create };
+  return { uid, state: snapshot.uid === uid ? snapshot.state : { status: 'loading' } as PetState, saving: saving === uid && uid !== null, retry, newId,
+    create: (draft: PetDraft) => save(draft, 'create'), update: (draft: PetDraft) => save(draft, 'update') };
 }
 
 export type PetCatalog = ReturnType<typeof usePets>;

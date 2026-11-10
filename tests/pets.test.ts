@@ -7,6 +7,7 @@ import type { PetDataSource, PetSnapshot } from '../src/core/data/datasources/pe
 import { PetRepositoryImpl } from '../src/core/data/repositories/pet-repository-impl';
 import { toPet, toPetDocument } from '../src/core/data/mappers/pet-mapper';
 import type { Result } from '../src/shared/types/result';
+import { updatePetTransaction, type PetUpdateTransaction } from '../src/core/data/datasources/pet-update-transaction';
 
 const owner: Session = { status: 'authenticated', uid: 'owner-1', role: 'OWNER' };
 const draft: PetDraft = { id: 'pet-1', name: ' Luna ', breed: ' Mestiza ', age: 0, weight: 12.5, size: 'MEDIUM', behavior: ' Sociable ', specialNeeds: ' Ninguna ', observations: ' Usa arnés ' };
@@ -16,6 +17,7 @@ function fixture() {
   let next: (snapshot: PetSnapshot) => void = () => {};
   let error: (value: unknown) => void = () => {};
   let saved: Pet | undefined;
+  let updated: { ownerId: string; draft: PetDraft } | undefined;
   let stopped = false;
   let idCalls = 0;
   let observeCalls = 0;
@@ -23,6 +25,7 @@ function fixture() {
   const source: PetDataSource = {
     newId() { idCalls++; return 'generated-id'; },
     async create(value) { saved = value; },
+    async update(ownerId, draft) { updated = { ownerId, draft }; },
     observeByOwner(uid, listener, onError) {
       assert.equal(uid, 'owner-1');
       observeCalls++;
@@ -34,7 +37,7 @@ function fixture() {
   return { source, repository, actions: createPetUseCases(repository), events,
     next: (documents: PetSnapshot['documents'], fromCache = false, pendingWrites = false) => next({ documents, fromCache, pendingWrites }),
     fail: (value: unknown) => error(value),
-    get saved() { return saved; }, get stopped() { return stopped; },
+    get saved() { return saved; }, get updated() { return updated; }, get stopped() { return stopped; },
     get idCalls() { return idCalls; }, get observeCalls() { return observeCalls; } };
 }
 
@@ -65,10 +68,12 @@ it('un paseador o una sesión sin autenticar no puede crear ni observar mascotas
   for (const session of [{ status: 'signed-out' }, { status: 'authenticated', uid: 'walker-1', role: 'WALKER' }] as const) {
     const f = fixture();
     assert.equal((await f.actions.create(session, draft)).ok, false);
+    assert.equal((await f.actions.update(session, draft)).ok, false);
     assert.equal(f.actions.newId(session).ok, false);
     f.actions.observe(session, (result) => f.events.push(result))();
     assert.equal(f.events.at(-1)?.ok, false);
     assert.equal(f.saved, undefined);
+    assert.equal(f.updated, undefined);
     assert.equal(f.idCalls, 0);
     assert.equal(f.observeCalls, 0);
   }
@@ -142,16 +147,23 @@ it('no expone mascotas ajenas ni detalles internos de errores del SDK', async ()
   stop();
 });
 
-it('dos clientes reciben el alta de la misma cuenta en tiempo real y aíslan a otros dueños', async () => {
+it('dos clientes reciben el alta y la edición de la misma cuenta en tiempo real y aíslan a otros dueños', async () => {
   // Backend compartido simulado; cada cliente tiene su repositorio y su suscripción.
-  const documents = new Map<string, Pet>();
+  const documents = new Map<string, Record<string, unknown>>();
   const listeners = new Set<() => void>();
   function source(): PetDataSource {
     return {
       newId: () => 'shared-pet',
-      async create(value) { documents.set(value.id, value); listeners.forEach((notify) => notify()); },
+      async create(value) { documents.set(value.id, toPetDocument(value)); listeners.forEach((notify) => notify()); },
+      async update(ownerId, draft) {
+        await updatePetTransaction({
+          async get(collection, id) { return collection === 'users' ? { role: 'OWNER', active: true } : documents.get(id) ?? null; },
+          updatePet(id, data) { documents.set(id, { ...documents.get(id), ...data }); },
+        }, ownerId, draft);
+        listeners.forEach((notify) => notify());
+      },
       observeByOwner(uid, listener) {
-        const notify = () => listener({ documents: [...documents.values()].filter((value) => value.ownerId === uid).map((value) => ({ id: value.id, data: toPetDocument(value) })), fromCache: false, pendingWrites: false });
+        const notify = () => listener({ documents: [...documents.entries()].filter(([, value]) => value.ownerId === uid).map(([id, data]) => ({ id, data })), fromCache: false, pendingWrites: false });
         listeners.add(notify); notify(); return () => { listeners.delete(notify); };
       },
     };
@@ -172,6 +184,98 @@ it('dos clientes reciben el alta de la misma cuenta en tiempo real y aíslan a o
   assert.equal((await android.create(owner, { ...draft, id: 'pet-2', name: 'Milo' })).ok, true);
   assert.deepEqual(webEvents.at(-1), androidEvents.at(-1));
   assert.equal(documents.size, 2);
+  assert.equal((await android.update(owner, { ...draft, name: 'Luna actualizada', weight: 14 })).ok, true);
+  assert.deepEqual(webEvents.at(-1), androidEvents.at(-1));
+  const updated = webEvents.at(-1);
+  assert.ok(updated?.ok);
+  assert.equal(updated.value.items.find((value) => value.id === draft.id)?.name, 'Luna actualizada');
+  assert.equal(updated.value.items.find((value) => value.id === draft.id)?.weight, 14);
+  assert.equal(documents.size, 2);
+  assert.deepEqual(otherEvents.at(-1), { ok: true, value: { items: [], fromCache: false, pendingWrites: false } });
   stops.forEach((stop) => stop());
   assert.equal(listeners.size, 0);
+});
+
+it('la edición conserva el identificador, toma el dueño de la sesión y solo acepta los campos editables', async () => {
+  const f = fixture();
+  const injected = { ...draft, ownerId: 'other-owner', photoUri: null, admin: true };
+  assert.deepEqual(await f.actions.update(owner, injected), { ok: true, value: undefined });
+  const { ownerId, photoUri, ...details } = pet;
+  assert.deepEqual(f.updated, { ownerId, draft: details });
+  assert.equal(f.idCalls, 0);
+  assert.equal(f.saved, undefined);
+});
+
+it('la edición valida los datos antes de intentar guardarlos', async () => {
+  for (const invalid of [
+    { id: '../invalid' }, { name: '' }, { name: 'x'.repeat(81) }, { age: -1 }, { age: 1.5 },
+    { weight: 0 }, { weight: Infinity }, { weight: NaN }, { breed: 'x'.repeat(81) },
+    { behavior: 'x'.repeat(201) }, { specialNeeds: 'x'.repeat(1001) }, { observations: 'x'.repeat(1001) },
+    { size: 'invalid' as PetDraft['size'] },
+  ]) {
+    const f = fixture();
+    const result = await f.actions.update(owner, { ...draft, ...invalid });
+    assert.ok(!result.ok);
+    assert.equal(result.error.code, 'validation');
+    assert.equal(f.updated, undefined);
+  }
+});
+
+it('actualiza el mismo documento conservando la foto y los campos ajenos al formulario', async () => {
+  const existing = { ...toPetDocument(pet), photoUri: 'https://example.com/current-photo.jpg', createdAt: 'original' };
+  let stored = { ...existing };
+  const reads: string[] = [];
+  let writes = 0;
+  const transaction: PetUpdateTransaction = {
+    async get(collection, id) {
+      reads.push(`${collection}/${id}`);
+      return collection === 'users' ? { role: 'OWNER' } : stored;
+    },
+    updatePet(id, data) {
+      assert.equal(id, pet.id);
+      assert.equal('ownerId' in data || 'photoUri' in data || 'id' in data, false);
+      stored = { ...stored, ...data };
+      writes++;
+    },
+  };
+  await updatePetTransaction(transaction, owner.uid, { ...draft, name: 'Milo', age: 2, weight: 15, size: 'LARGE' });
+  assert.deepEqual(reads, ['users/owner-1', 'pets/pet-1']);
+  assert.equal(writes, 1);
+  assert.equal(stored.name, 'Milo');
+  assert.equal(stored.weight, 15);
+  assert.equal(stored.size, 'Grande');
+  assert.equal(stored.ownerId, existing.ownerId);
+  assert.equal(stored.photoUri, existing.photoUri);
+  assert.equal(stored.createdAt, existing.createdAt);
+});
+
+it('no recrea mascotas eliminadas ni permite editar mascotas ajenas o con una cuenta inhabilitada', async () => {
+  for (const [profile, existing, expected] of [
+    [{ role: 'OWNER' }, null, 'not-found'],
+    [{ role: 'OWNER' }, { ownerId: 'other-owner' }, 'permission-denied'],
+    [{ role: 'OWNER', active: false }, toPetDocument(pet), 'permission-denied'],
+    [{ role: 'WALKER', active: true }, toPetDocument(pet), 'permission-denied'],
+    [null, toPetDocument(pet), 'permission-denied'],
+  ] as const) {
+    let writes = 0;
+    await assert.rejects(updatePetTransaction({
+      async get(collection) { return collection === 'users' ? profile : existing; },
+      updatePet() { writes++; },
+    }, owner.uid, draft), { code: expected });
+    assert.equal(writes, 0);
+  }
+});
+
+it('informa errores de edición sin exponer los detalles del SDK', async () => {
+  for (const [code, expected] of [
+    ['firestore/permission-denied', 'forbidden'], ['firestore/not-found', 'not-found'],
+    ['unavailable', 'unavailable'], ['unknown', 'unexpected'],
+  ] as const) {
+    const f = fixture();
+    f.source.update = async () => { throw { code, message: 'private SDK detail' }; };
+    const result = await f.actions.update(owner, draft);
+    assert.ok(!result.ok);
+    assert.equal(result.error.code, expected);
+    assert.doesNotMatch(result.error.message, /private SDK/);
+  }
 });

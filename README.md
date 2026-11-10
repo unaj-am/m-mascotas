@@ -9,7 +9,7 @@ Aplicación para la gestión de mascotas y paseos, con perfiles de dueño y pase
 - Recuperación de contraseña y verificación de correo electrónico.
 - Acceso a paneles según el rol: dueño (`OWNER`) o paseador (`WALKER`).
 - Panel de dueño con resumen de actividad, próximo paseo y consulta de mascotas, paseos y perfil.
-- Registro de mascotas y listado en tiempo real, compartido entre Android y web.
+- Registro y edición de mascotas, con listado en tiempo real compartido entre Android y web.
 - Búsqueda de paseadores disponibles por zona o descripción y envío de solicitudes de paseo.
 - Solicitudes compartidas en tiempo real entre dueño y paseador.
 - Aceptación de solicitudes por el paseador, con creación del paseo programado.
@@ -20,7 +20,7 @@ Aplicación para la gestión de mascotas y paseos, con perfiles de dueño y pase
 - Persistencia y cierre de sesión.
 - Validación del perfil y del estado de la cuenta en Firestore.
 
-El proyecto se encuentra en desarrollo. La edición y eliminación de mascotas, la carga de fotos, el rechazo y cancelación de solicitudes, la cancelación de paseos y las notificaciones generales están pendientes de implementación.
+El proyecto se encuentra en desarrollo. La eliminación de mascotas, la carga de fotos, el rechazo y cancelación de solicitudes, la cancelación de paseos y las notificaciones generales están pendientes de implementación.
 
 ## Tecnologías
 
@@ -60,7 +60,9 @@ El acceso utiliza el proyecto `mascotas-5d228`. Cada cuenta debe tener un docume
 
 En el panel de dueño, **Mascotas → Registrar mascota** permite guardar nombre, raza, edad, peso, tamaño, comportamiento, necesidades especiales y observaciones. Nombre, edad y peso son obligatorios. Las mascotas se guardan en `pets` con el `ownerId` de la sesión; el listado escucha los cambios de Firestore. Al usar la misma cuenta y proyecto Firebase en Android y web, los cambios aparecen sin recargar. El alta requiere conexión y se confirma cuando el servidor acepta el guardado.
 
-Las reglas de Firestore deben permitir al dueño consultar `users/{uid}`, listar sus mascotas por `ownerId` y crear mascotas con su propio `ownerId`. Los adaptadores no modifican las reglas del proyecto.
+Cada tarjeta incluye **Editar mascota**, que abre el formulario con sus datos actuales. **Guardar cambios** valida los mismos campos que el alta y actualiza el registro existente; conserva su identificador, dueño, foto y los campos ajenos al formulario. **Cancelar** descarta la edición. El guardado requiere conexión y verifica en una transacción que la mascota siga existiendo, pertenezca a la cuenta autenticada y que su perfil de dueño esté activo. Los cambios se reflejan en el listado en tiempo real, también entre Android y web.
+
+Las reglas de Firestore deben permitir al dueño consultar `users/{uid}`, listar sus mascotas por `ownerId`, crear mascotas con su propio `ownerId` y actualizar los campos de sus propias mascotas sin cambiar el dueño. Los adaptadores no modifican las reglas del proyecto.
 
 **Buscar paseador** abre el directorio de perfiles profesionales disponibles en `walkers` (`available: true`). Tener una cuenta de tipo paseador no crea por sí solo ese perfil. Las tarjetas muestran zona de servicio, descripción, experiencia, capacidad, precio y calificación sin consultar los documentos privados de otros usuarios.
 

@@ -1,4 +1,4 @@
-import type { Pet, PetSize } from '../../domain/entities/pet';
+import type { Pet, PetDraft, PetSize } from '../../domain/entities/pet';
 import type { DashboardDocument } from '../datasources/dashboard-document';
 import { imageUrl, nonnegative, record, text } from './dashboard-values';
 
@@ -24,8 +24,14 @@ export function toPet(document: DashboardDocument, ownerId: string): Pet {
 export function toPetDocument(pet: Pet) {
   // Mismo esquema que Kotlin; no guardar id ni datos ajenos al formulario.
   return {
-    ownerId: pet.ownerId, name: pet.name, breed: pet.breed, age: pet.age, weight: pet.weight,
-    observations: pet.observations, photoUri: pet.photoUri, size: sizes[pet.size],
-    behavior: pet.behavior, specialNeeds: pet.specialNeeds,
+    ownerId: pet.ownerId, ...toPetUpdateDocument(pet), photoUri: pet.photoUri,
+  };
+}
+export function toPetUpdateDocument(draft: PetDraft) {
+  // Editar los datos no cambia la foto, el dueño ni otros campos del registro.
+  return {
+    name: draft.name, breed: draft.breed, age: draft.age, weight: draft.weight,
+    observations: draft.observations, size: sizes[draft.size],
+    behavior: draft.behavior, specialNeeds: draft.specialNeeds,
   };
 }
