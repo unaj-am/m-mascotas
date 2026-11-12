@@ -122,7 +122,6 @@ function ProfileContent({ data }: { data: OwnerDashboard }) {
     {[['Correo electrónico', data.email], ['Teléfono', data.phone]].map(([label, value]) => <View key={label}>
       <Text style={s.fieldLabel}>{label}</Text><Text selectable style={s.fieldValue}>{value || 'Sin informar'}</Text>
     </View>)}
-    <Text style={s.notice}>La edición de los datos de tu perfil estará disponible próximamente.</Text>
   </View>;
 }
 

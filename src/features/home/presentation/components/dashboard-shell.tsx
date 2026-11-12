@@ -62,9 +62,7 @@ export function DashboardShell<T extends string>({ variant, tabs, activeTab, onT
           <Text accessibilityRole="header" numberOfLines={home ? 1 : undefined} style={[s.heading, compact && s.headingCompact]}>{title}</Text>
           <Text style={[s.subtitle, compact && s.subtitleCompact]}>{subtitle}</Text>
         </View>
-        {home ? <Pressable disabled accessibilityRole="button" accessibilityState={{ disabled: true }} accessibilityLabel="Notificaciones. Disponibles próximamente." style={[s.refresh, s.unavailable]}>
-          <DashboardIcon name="bell" color={colors.primary} size={23} />
-        </Pressable> : <Pressable accessibilityRole="button" accessibilityLabel="Actualizar mis datos" disabled={loading || refreshDisabled} onPress={onRefresh} style={s.refresh}>
+        {!home && <Pressable accessibilityRole="button" accessibilityLabel="Actualizar mis datos" disabled={loading || refreshDisabled} onPress={onRefresh} style={s.refresh}>
           {loading ? <ActivityIndicator color={colors.primary} /> : <DashboardIcon name="refresh" color={colors.primary} size={24} />}
         </Pressable>}
       </View>

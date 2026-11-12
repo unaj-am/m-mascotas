@@ -27,16 +27,16 @@ function fixture() {
   let currentError: (error: unknown) => void = () => {};
   const source: WalkLocationDataSource = {
     async getWalk() { return walk; },
-    observeWalk(uid, id, next) { nextWalk = next; next({ data: walk, fromCache: false, pendingWrites: false }); return () => { stopped++; }; },
-    observeCurrent(uid, id, next, error) { childCalls++; nextCurrent = next; currentError = error; next({ data: null, fromCache: false, pendingWrites: false }); return () => { stopped++; }; },
-    observeHistory(uid, id, next) { childCalls++; nextHistory = next; next({ data: [], fromCache: false, pendingWrites: false }); return () => { stopped++; }; },
-    async publish(uid, id, value) { published.push(value); nextCurrent({ data: toLocationDocument(value), fromCache: false, pendingWrites: false }); nextHistory({ data: published.map(toLocationDocument), fromCache: false, pendingWrites: false }); },
+    observeWalk(_uid, _id, next) { nextWalk = next; next({ data: walk, fromCache: false, pendingWrites: false }); return () => { stopped++; }; },
+    observeCurrent(_uid, _id, next, error) { childCalls++; nextCurrent = next; currentError = error; next({ data: null, fromCache: false, pendingWrites: false }); return () => { stopped++; }; },
+    observeHistory(_uid, _id, next) { childCalls++; nextHistory = next; next({ data: [], fromCache: false, pendingWrites: false }); return () => { stopped++; }; },
+    async publish(_uid, _id, value) { published.push(value); nextCurrent({ data: toLocationDocument(value), fromCache: false, pendingWrites: false }); nextHistory({ data: published.map(toLocationDocument), fromCache: false, pendingWrites: false }); },
   };
   const repository = new WalkLocationRepositoryImpl(source);
   let prepareCalls = 0, captureStarts = 0, captureStops = 0, captureWalk: string | null = null;
   const capture: LocationCaptureRepository = {
     async prepare() { prepareCalls++; return success(undefined); },
-    async start(uid, id) { captureStarts++; captureWalk = id; return success(undefined); },
+    async start(_uid, id) { captureStarts++; captureWalk = id; return success(undefined); },
     async stop() { captureStops++; captureWalk = null; return success(undefined); },
     async status() { return success({ walkId: captureWalk, sharing: captureWalk !== null, message: null }); },
   };

@@ -32,7 +32,7 @@ function fixture() {
     newRequestId() { calls++; return 'generated-id'; },
     observeAvailableWalkers(next) { calls++; walkNext = next; return () => { stops++; }; },
     async createRequest(uid, value) { calls++; saved = { uid, draft: value }; },
-    observeRequests(uid, side, next, error) { calls++; requestNext = next; requestError = error; return () => { stops++; }; },
+    observeRequests(_uid, _side, next, error) { calls++; requestNext = next; requestError = error; return () => { stops++; }; },
   };
   const repository = new WalkBookingRepositoryImpl(source);
   return { source, repository, actions: createWalkBookingUseCases(repository, () => now),

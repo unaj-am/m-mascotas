@@ -158,7 +158,6 @@ function ProfileContent({ data }: { data: WalkerDashboard }) {
           ['Calificación', data.rating === null ? 'Sin calificar' : `${data.rating.toLocaleString('es-AR', { maximumFractionDigits: 1 })} / 5`]].map(([label, value]) =>
           <View key={label}><Text style={s.fieldLabel}>{label}</Text><Text style={s.fieldValue}>{value}</Text></View>)}
       </> : <Text style={s.notice}>Tu cuenta todavía no tiene un perfil profesional. No podés activar la disponibilidad hasta completarlo.</Text>}
-      <Text style={s.notice}>La creación y edición del perfil profesional estarán disponibles próximamente.</Text>
     </View>
   </>;
 }

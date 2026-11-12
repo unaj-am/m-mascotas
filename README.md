@@ -20,7 +20,7 @@ Aplicación para la gestión de mascotas y paseos, con perfiles de dueño y pase
 - Persistencia y cierre de sesión.
 - Validación del perfil y del estado de la cuenta en Firestore.
 
-El proyecto se encuentra en desarrollo. La eliminación de mascotas, la carga de fotos, el rechazo y cancelación de solicitudes, la cancelación de paseos y las notificaciones generales están pendientes de implementación.
+El alcance de esta versión corresponde a las funcionalidades anteriores.
 
 ## Tecnologías
 
@@ -114,6 +114,14 @@ También se puede utilizar un túnel:
 npm run start:tunnel
 ```
 
+Si necesitás limpiar la caché de Metro, ejecutá `npm run start:tunnel -- --clear`. Mantené la terminal abierta mientras usás la versión de desarrollo.
+
+Para abrir una versión ya instalada con el celular conectado por USB y la depuración USB activada:
+
+```bash
+npm run android:usb
+```
+
 La aplicación requiere una compilación de desarrollo con los módulos nativos de Firebase; no es compatible con Expo Go.
 
 ### Web
@@ -151,12 +159,10 @@ src/
 ├── features/
 │   ├── auth/
 │   ├── home/
-│   ├── users/
 │   ├── pets/
 │   ├── walkers/
 │   ├── walks/
-│   ├── tracking/
-│   └── notifications/
+│   └── tracking/
 └── shared/             Tipos compartidos
 ```
 
@@ -171,8 +177,9 @@ Cada módulo de `features` contiene su capa `presentation`, con pantallas, compo
 | `WalkerDashboardRepository` — `walker-dashboard-repository.ts` | `WalkerDashboardRepositoryImpl` — `walker-dashboard-repository-impl.ts` |
 | `PetRepository` — `pet-repository.ts` | `PetRepositoryImpl` — `pet-repository-impl.ts` |
 | `WalkBookingRepository` — `walk-booking-repository.ts` | `WalkBookingRepositoryImpl` — `walk-booking-repository-impl.ts` |
+| `WalkLocationRepository` — `walk-location-repository.ts` | `WalkLocationRepositoryImpl` — `walk-location-repository-impl.ts` |
 
-Los contratos declaran **qué operaciones existen**. Las clases con sufijo `Impl` definen **cómo se ejecutan**, implementando la interfaz y delegando en las fuentes de datos. Los contratos de los módulos pendientes se conservan en el dominio; sus implementaciones se agregarán cuando se desarrollen esas funcionalidades.
+Los contratos declaran **qué operaciones existen**. Las clases con sufijo `Impl` definen **cómo se ejecutan**, implementando la interfaz y delegando en las fuentes de datos. `LocationCaptureRepository` se implementa con adaptadores separados para Android y web. El proyecto conserva los contratos utilizados por las funcionalidades actuales.
 
 El dominio no importa Firebase, React ni la capa de datos. Las pantallas consumen los casos de uso mediante inyección y no acceden directamente a los SDKs ni a las implementaciones de repositorios.
 
@@ -182,4 +189,4 @@ El dominio no importa Firebase, React ni la capa de datos. Las pantallas consume
 npm run check
 ```
 
-Ejecuta la comprobación de tipos y las pruebas automatizadas.
+Ejecuta la comprobación de tipos, incluida la detección de imports, variables y parámetros sin uso, y las pruebas automatizadas.

@@ -4,8 +4,7 @@ export type WalkRequest = Readonly<{
   scheduledAt: number; durationMinutes: number; status: RequestStatus;
   observations: string; ownerName: string; petNames: readonly string[]; petPhotos: readonly string[];
 }>;
-export type CreateWalkRequest = Pick<WalkRequest,
-  'id' | 'ownerId' | 'walkerId' | 'petIds' | 'scheduledAt' | 'durationMinutes' | 'observations' | 'status'
->;
-export type WalkRequestDraft = Readonly<Omit<CreateWalkRequest, 'ownerId' | 'status'>>;
+export type WalkRequestDraft = Readonly<Pick<WalkRequest,
+  'id' | 'walkerId' | 'petIds' | 'scheduledAt' | 'durationMinutes' | 'observations'
+>>;
 export type RequestSide = 'owner' | 'walker';

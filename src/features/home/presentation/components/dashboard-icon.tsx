@@ -1,6 +1,6 @@
 import { Text, View } from 'react-native';
 
-export type DashboardIconName = 'home' | 'paw' | 'calendar' | 'user' | 'arrow' | 'logout' | 'refresh' | 'check' | 'bell' | 'inbox';
+export type DashboardIconName = 'home' | 'paw' | 'calendar' | 'user' | 'arrow' | 'logout' | 'refresh' | 'check' | 'inbox';
 
 export function DashboardIcon({ name, color = '#7051a5', size = 22 }: { name: DashboardIconName; color?: string; size?: number }) {
   const unit = size / 24;
@@ -12,10 +12,6 @@ export function DashboardIcon({ name, color = '#7051a5', size = 22 }: { name: Da
       <View style={[shape(5, 12, 14, 10, 7), { backgroundColor: color, transform: [{ rotate: '-8deg' }] }]} />
       {[[1, 7, -22], [6, 1, -8], [13, 1, 8], [18, 7, 22]].map(([left = 0, top = 0, angle = 0], index) =>
         <View key={index} style={[shape(left, top, 5, 7, 4), { backgroundColor: color, transform: [{ rotate: `${angle}deg` }] }]} />)}
-    </> : name === 'bell' ? <>
-      <View style={[shape(5, 4, 14, 15, 8), { borderWidth: 1.7, borderColor: color }]} />
-      <View style={[shape(3, 18, 18, 2, 1), { backgroundColor: color }]} />
-      <View style={[shape(10, 21, 4, 2, 1), { backgroundColor: color }]} />
     </> : name === 'inbox' ? <>
       <View style={[shape(3, 4, 18, 17, 3), { borderWidth: 1.7, borderColor: color }]} />
       <View style={[shape(3, 14, 6, 1), { backgroundColor: color }]} />
