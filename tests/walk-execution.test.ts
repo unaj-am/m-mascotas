@@ -127,7 +127,7 @@ it('iniciar y finalizar leen solamente el paseo y actualizan los mismos campos q
   const port: WalkExecutionTransaction = {
     async get(collection, id) { reads.push(`${collection}/${id}`); if (collection !== 'walks') throw { code: 'permission-denied' }; return data; },
     setWalk() { assert.fail('El paseo existente no se debe reemplazar'); },
-    update(collection, id, fields) { assert.equal(collection, 'walks'); updates.push(fields); data = { ...data, ...fields }; },
+    update(collection, _id, fields) { assert.equal(collection, 'walks'); updates.push(fields); data = { ...data, ...fields }; },
   };
   await updateWalkTransaction(port, 'walker-1', 'request-1', 'start', () => start);
   await updateWalkTransaction(port, 'walker-1', 'request-1', 'complete', () => start + 1800000);

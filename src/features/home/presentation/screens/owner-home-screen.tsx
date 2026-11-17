@@ -1,6 +1,6 @@
 import { DashboardShell, DashboardAvatar } from '../components/dashboard-shell';
 import { useState } from 'react';
-import { ActivityIndicator, Pressable, Text, useWindowDimensions, View } from 'react-native';
+import { ActivityIndicator, Pressable, ScrollView, Text, useWindowDimensions, View } from 'react-native';
 import { summarizeOwnerDashboard, type OwnerDashboard, type OwnerPetSummary, type OwnerWalkSummary } from '../../../../core/domain/entities/owner-dashboard';
 import { useOwnerDashboard } from '../hooks/use-owner-dashboard';
 import { DashboardIcon, type DashboardIconName } from '../components/dashboard-icon';
@@ -8,11 +8,12 @@ import { colors, styles as s } from './owner-home.styles';
 import { usePets } from '../../../pets/presentation/hooks/use-pets';
 import { PetsScreen } from '../../../pets/presentation/screens/pets-screen';
 import { WalkerSearchScreen } from '../../../walkers/presentation/screens/walker-search-screen';
-import { useBookingRequests } from '../../../walks/presentation/hooks/use-booking-requests';
+import { useBookingRequests, type BookingRequests } from '../../../walks/presentation/hooks/use-booking-requests';
 import { BookingRequestList } from '../../../walks/presentation/components/booking-request-list';
 import { useWalks } from '../../../walks/presentation/hooks/use-walks';
 import { WalkTiming } from '../../../walks/presentation/components/walk-timing';
-import { orderOwnerWalks, walkStatusLabels as statusLabel } from '../../../walks/presentation/state/walk-display';
+import { walkStatusLabels as statusLabel } from '../../../walks/presentation/state/walk-display';
+import { ownerWalkFilters, selectOwnerWalks, type OwnerWalkFilter } from '../../../walks/presentation/state/owner-walks-state';
 import { WalkTrackingScreen } from '../../../tracking/presentation/screens/walk-tracking-screen';
 
 type Tab = 'home' | 'pets' | 'walks' | 'profile' | 'walkers' | 'tracking';
@@ -87,18 +88,30 @@ function HomeContent({ data, compact, navigate, onSearch, onTrack }: { data: Own
     </View>
   </>;
 }
-function WalksContent({ walks: allWalks, pets, onTrack }: { walks: readonly OwnerWalkSummary[]; pets: readonly OwnerPetSummary[]; onTrack: (id: string) => void }) {
-  const [filter, setFilter] = useState<'all' | 'scheduled' | 'completed'>('all');
-  const walks = orderOwnerWalks(allWalks).filter((walk) => filter === 'all' || (filter === 'scheduled' ? ['SCHEDULED', 'IN_PROGRESS'].includes(walk.status) : walk.status === 'COMPLETED'));
+function WalksContent({ walks, requests, pets, onTrack, filter, setFilter }: { walks: readonly OwnerWalkSummary[]; requests: BookingRequests; pets: readonly OwnerPetSummary[]; onTrack: (id: string) => void; filter: OwnerWalkFilter; setFilter: (filter: OwnerWalkFilter) => void }) {
+  if (requests.state.status === 'loading') return <View style={s.surface}><ActivityIndicator color={colors.primary} /><Text style={s.notice}>Cargando tus paseos…</Text></View>;
+  if (requests.state.status === 'error') return <View style={s.surface}><Text accessibilityRole="alert" style={s.notice}>{requests.state.message}</Text><Pressable accessibilityRole="button" onPress={requests.retry} style={s.textLink}><Text style={s.textLinkLabel}>Volver a intentar</Text></Pressable></View>;
+  const selected = selectOwnerWalks(walks, requests.state.data.items, filter);
+  const hasResults = selected.requests.length + selected.upcoming.length + selected.history.length > 0;
   return <>
-    <View style={s.filters}>{([{ id: 'all', label: 'Todos' }, { id: 'scheduled', label: 'Confirmados y en curso' }, { id: 'completed', label: 'Finalizados' }] as const).map((item) =>
-      <Pressable key={item.id} accessibilityRole="button" accessibilityState={{ selected: filter === item.id }} onPress={() => setFilter(item.id)} style={[s.filter, filter === item.id && s.filterActive]}>
-        <Text style={[s.filterText, filter === item.id && s.filterTextActive]}>{item.label}</Text>
-      </Pressable>)}</View>
-    {walks.length ? walks.map((walk) => <WalkCard key={walk.id} walk={walk} pets={pets} onTrack={onTrack} />) : <View style={s.surface}>
-      <EmptyState icon="calendar" title="Sin paseos para mostrar" description="Los paseos de esta categoría van a aparecer acá cuando estén disponibles." />
+    {(requests.state.data.fromCache || requests.state.data.pendingWrites) && <Text style={s.notice}>{requests.state.data.pendingWrites ? 'Hay cambios pendientes de confirmación.' : 'Mostrando una copia guardada. Se actualizará al conectar con el servidor.'}</Text>}
+    {selected.counts.ALL > 0 && <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }} style={{ flexGrow: 0 }}>
+      {ownerWalkFilters.map((item) => <Pressable key={item.id} accessibilityRole="button" accessibilityState={{ selected: filter === item.id }} onPress={() => setFilter(item.id)} style={[s.filter, { borderRadius: 8 }, filter === item.id && s.filterActive]}>
+        <Text style={[s.filterText, filter === item.id && s.filterTextActive]}>{item.label} ({selected.counts[item.id]})</Text>
+      </Pressable>)}
+    </ScrollView>}
+    <BookingRequestList items={selected.requests} />
+    {selected.upcoming.length > 0 && <>
+      <View><Text accessibilityRole="header" style={s.sectionTitle}>Próximos y en curso</Text><Text style={s.subtitle}>Tus paseos confirmados y los que están activos.</Text></View>
+      {selected.upcoming.map((walk) => <WalkCard key={walk.id} walk={walk} pets={pets} onTrack={onTrack} />)}
+    </>}
+    {selected.history.length > 0 && <>
+      <View><Text accessibilityRole="header" style={s.sectionTitle}>Historial</Text><Text style={s.subtitle}>Paseos finalizados o cancelados.</Text></View>
+      {selected.history.map((walk) => <WalkCard key={walk.id} walk={walk} pets={pets} onTrack={onTrack} />)}
+    </>}
+    {!hasResults && <View style={s.surface}>
+      <EmptyState icon="calendar" title={selected.counts.ALL === 0 ? 'Todavía no tenés paseos' : 'No hay resultados'} description={selected.counts.ALL === 0 ? 'Buscá un paseador y enviá una solicitud para organizar tu primer paseo.' : `No tenés elementos que coincidan con el filtro ${ownerWalkFilters.find((item) => item.id === filter)?.label.toLowerCase()}.`} />
     </View>}
-    <Text style={s.notice}>Los paseos aparecerán cuando una solicitud sea aceptada.</Text>
   </>;
 }
 function ProfileContent({ data }: { data: OwnerDashboard }) {
@@ -109,7 +122,6 @@ function ProfileContent({ data }: { data: OwnerDashboard }) {
     {[['Correo electrónico', data.email], ['Teléfono', data.phone]].map(([label, value]) => <View key={label}>
       <Text style={s.fieldLabel}>{label}</Text><Text selectable style={s.fieldValue}>{value || 'Sin informar'}</Text>
     </View>)}
-    <Text style={s.notice}>La edición de los datos de tu perfil estará disponible próximamente.</Text>
   </View>;
 }
 
@@ -117,6 +129,7 @@ export function OwnerHomeScreen() {
   const { width } = useWindowDimensions();
   const compact = width < 760;
   const [tab, setTab] = useState<Tab>('home');
+  const [walkFilter, setWalkFilter] = useState<OwnerWalkFilter>('ALL');
   const { state, reload } = useOwnerDashboard();
   const pets = usePets();
   const requests = useBookingRequests('owner');
@@ -134,7 +147,7 @@ export function OwnerHomeScreen() {
   const description = {
     home: '¿Listos para el próximo paseo?',
     pets: 'Tus compañeros de todos los días, en un solo lugar.',
-    walks: 'Consultá lo que viene y recordá sus aventuras anteriores.',
+    walks: 'Consultá tus solicitudes, próximos paseos e historial.',
     profile: 'Los datos de tu cuenta de Mascotas.',
     walkers: 'Encontrá un paseador disponible y organizá el próximo paseo.',
     tracking: 'La ubicación y el recorrido compartidos por el paseador.',
@@ -148,10 +161,8 @@ export function OwnerHomeScreen() {
     {tab === 'walks' && <>
       <Pressable accessibilityRole="button" onPress={search} style={[s.button, s.primary]}><Text style={s.primaryText}>Buscar paseador</Text></Pressable>
       {requestSent && <Text accessibilityLiveRegion="polite" style={[s.notice, { color: colors.primaryDark }]}>Tu solicitud se envió correctamente.</Text>}
-      <Text accessibilityRole="header" style={s.sectionTitle}>Paseos confirmados</Text>
       {walks.state.status === 'loading' && <View style={s.surface}><ActivityIndicator color={colors.primary} /><Text style={s.notice}>Buscando tus paseos…</Text></View>}
-      {walks.state.status === 'ready' && <WalksContent walks={walks.state.data.items} pets={pets.state.status === 'ready' ? pets.state.data.items : data?.pets ?? []} onTrack={track} />}
-      <BookingRequestList requests={requests} />
+      {walks.state.status === 'ready' && <WalksContent walks={walks.state.data.items} requests={requests} pets={pets.state.status === 'ready' ? pets.state.data.items : data?.pets ?? []} onTrack={track} filter={walkFilter} setFilter={setWalkFilter} />}
     </>}
     {!independent && state.status === 'loading' && <View style={[s.surface, s.busySurface]}><ActivityIndicator color={colors.primary} /><Text accessibilityLiveRegion="polite" style={s.busyText}>Buscando tus mascotas y paseos…</Text></View>}
     {!independent && state.status === 'error' && <View style={s.surface}><EmptyState icon="refresh" title="No pudimos cargar tus datos" description={state.message} />

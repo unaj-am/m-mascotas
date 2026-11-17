@@ -1,12 +1,9 @@
-import { failure } from '../../../shared/types/result';
+import { failure, success, type Result } from '../../../shared/types/result';
 import type { Pet, PetDraft } from '../entities/pet';
 import type { Session } from '../entities/session';
 import type { PetRepository } from '../repositories/pet-repository';
 
-export const createSavePet = (repository: PetRepository) => async (session: Session, draft: PetDraft) => {
-  if (session.status !== 'authenticated' || session.role !== 'OWNER') {
-    return failure('forbidden', 'Solo una cuenta de dueño puede registrar mascotas.');
-  }
+export function validatePetDraft(draft: PetDraft): Result<PetDraft> {
   if (!/^[a-zA-Z0-9_-]{1,128}$/.test(draft.id) || !draft.name.trim() || draft.name.trim().length > 80) {
     return failure('validation', 'Ingresá el nombre de la mascota, con un máximo de 80 caracteres.');
   }
@@ -22,10 +19,19 @@ export const createSavePet = (repository: PetRepository) => async (session: Sess
   if (!['SMALL', 'MEDIUM', 'LARGE', 'EXTRA_LARGE', 'UNKNOWN'].includes(draft.size)) {
     return failure('validation', 'Elegí un tamaño válido para la mascota.');
   }
-  const pet: Pet = {
-    id: draft.id, ownerId: session.uid, name: draft.name.trim(), breed: draft.breed.trim(),
+  return success({
+    id: draft.id, name: draft.name.trim(), breed: draft.breed.trim(),
     age: draft.age, weight: draft.weight, size: draft.size, behavior: draft.behavior.trim(),
-    observations: draft.observations.trim(), specialNeeds: draft.specialNeeds.trim(), photoUri: null,
-  };
+    observations: draft.observations.trim(), specialNeeds: draft.specialNeeds.trim(),
+  });
+}
+
+export const createSavePet = (repository: PetRepository) => async (session: Session, draft: PetDraft) => {
+  if (session.status !== 'authenticated' || session.role !== 'OWNER') {
+    return failure('forbidden', 'Solo una cuenta de dueño puede registrar mascotas.');
+  }
+  const validated = validatePetDraft(draft);
+  if (!validated.ok) return validated;
+  const pet: Pet = { ...validated.value, ownerId: session.uid, photoUri: null };
   return repository.create(pet);
 };

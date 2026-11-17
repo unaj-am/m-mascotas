@@ -6,6 +6,7 @@
   "scripts": {
     "start": "expo start --dev-client",
     "android": "expo run:android",
+    "android:usb": "expo start --dev-client --localhost --android --port 8081",
     "typecheck": "tsc --noEmit",
     "test": "tsx --test tests/*.test.ts",
     "check": "npm run typecheck && npm test",

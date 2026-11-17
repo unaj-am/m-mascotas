@@ -82,7 +82,6 @@ export function createDashboardStyles(colors: DashboardColors) { return StyleShe
   profileAvatar: { width: 54, height: 54, borderRadius: 27, backgroundColor: colors.container, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
   profileInitial: { fontSize: 23, fontWeight: '600', color: colors.primaryDark },
   emptyTitleLeft: { color: colors.ink, fontSize: 18, lineHeight: 25, fontWeight: '600' },
-  unavailable: { opacity: 0.55 },
   fieldLabel: { color: colors.muted, fontSize: 12, marginBottom: 6 },
   fieldValue: { color: colors.ink, fontSize: 15 },
   notice: { color: colors.muted, fontSize: 12, lineHeight: 19 },

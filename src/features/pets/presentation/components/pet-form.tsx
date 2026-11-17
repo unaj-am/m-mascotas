@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
-import type { PetSize } from '../../../../core/domain/entities/pet';
+import type { Pet, PetSize } from '../../../../core/domain/entities/pet';
 import { createDashboardStyles, dashboardColors } from '../../../home/presentation/components/dashboard.styles';
 import type { PetCatalog } from '../hooks/use-pets';
 
@@ -18,17 +18,17 @@ const fields = StyleSheet.create({
   error: { color: '#a12d34', fontSize: 13, lineHeight: 21 },
 });
 
-export function PetForm({ catalog, onSaved, onCancel }: { catalog: PetCatalog; onSaved: () => void; onCancel: () => void }) {
-  const [name, setName] = useState('');
-  const [breed, setBreed] = useState('');
-  const [age, setAge] = useState('');
-  const [weight, setWeight] = useState('');
-  const [size, setSize] = useState<PetSize>('UNKNOWN');
-  const [behavior, setBehavior] = useState('');
-  const [specialNeeds, setSpecialNeeds] = useState('');
-  const [observations, setObservations] = useState('');
+export function PetForm({ catalog, pet, onSaved, onCancel }: { catalog: PetCatalog; pet?: Pet; onSaved: () => void; onCancel: () => void }) {
+  const [name, setName] = useState(pet?.name ?? '');
+  const [breed, setBreed] = useState(pet?.breed ?? '');
+  const [age, setAge] = useState(pet ? String(pet.age) : '');
+  const [weight, setWeight] = useState(pet ? String(pet.weight) : '');
+  const [size, setSize] = useState<PetSize>(pet?.size ?? 'UNKNOWN');
+  const [behavior, setBehavior] = useState(pet?.behavior ?? '');
+  const [specialNeeds, setSpecialNeeds] = useState(pet?.specialNeeds ?? '');
+  const [observations, setObservations] = useState(pet?.observations ?? '');
   const [message, setMessage] = useState('');
-  const id = useRef<string | null>(null);
+  const id = useRef<string | null>(pet?.id ?? null);
   const submitting = useRef(false);
   const mounted = useRef(true);
   useEffect(() => { mounted.current = true; return () => { mounted.current = false; }; }, []);
@@ -47,7 +47,8 @@ export function PetForm({ catalog, onSaved, onCancel }: { catalog: PetCatalog; o
       id.current = prepared.value;
     }
     const uid = catalog.uid;
-    const result = await catalog.create({ id: id.current, name, breed, age: age.trim() ? Number(age.trim()) : NaN,
+    const save = pet ? catalog.update : catalog.create;
+    const result = await save({ id: id.current, name, breed, age: age.trim() ? Number(age.trim()) : NaN,
       weight: weight.trim() ? Number(weight.trim().replace(',', '.')) : NaN, size, behavior, specialNeeds, observations });
     submitting.current = false;
     if (!mounted.current || latestCatalog.current.uid !== uid) return;
@@ -55,8 +56,8 @@ export function PetForm({ catalog, onSaved, onCancel }: { catalog: PetCatalog; o
     else setMessage(result.error.message);
   }
   return <View style={s.surface}>
-    <View><Text accessibilityRole="header" style={s.sectionTitle}>Nueva mascota</Text>
-      <Text style={s.subtitle}>Completá sus datos. Los campos con * son obligatorios.</Text></View>
+    <View><Text accessibilityRole="header" style={s.sectionTitle}>{pet ? 'Editar mascota' : 'Nueva mascota'}</Text>
+      <Text style={s.subtitle}>{pet ? `Actualizá la información de ${pet.name}.` : 'Completá sus datos.'} Los campos con * son obligatorios.</Text></View>
     <View style={fields.grid}>
       <View style={fields.gridField}><Text style={fields.label}>Nombre *</Text><TextInput accessibilityLabel="Nombre de la mascota, obligatorio" value={name} onChangeText={setName} editable={!catalog.saving} maxLength={80} autoCapitalize="words" style={fields.input} placeholder="Ej.: Luna" placeholderTextColor={colors.muted} /></View>
       <View style={fields.gridField}><Text style={fields.label}>Raza</Text><TextInput accessibilityLabel="Raza" value={breed} onChangeText={setBreed} editable={!catalog.saving} maxLength={80} autoCapitalize="words" style={fields.input} placeholder="Ej.: Mestiza" placeholderTextColor={colors.muted} /></View>
@@ -77,7 +78,7 @@ export function PetForm({ catalog, onSaved, onCancel }: { catalog: PetCatalog; o
     <View style={fields.actions}>
       <Pressable accessibilityRole="button" disabled={catalog.saving} onPress={onCancel} style={[s.button, fields.secondary, catalog.saving && s.muted]}><Text style={s.textLinkLabel}>Cancelar</Text></Pressable>
       <Pressable accessibilityRole="button" accessibilityState={{ disabled: catalog.saving, busy: catalog.saving }} disabled={catalog.saving} onPress={() => { void submit(); }} style={[s.button, s.primary, catalog.saving && s.muted]}>
-        {catalog.saving && <ActivityIndicator color={colors.white} />}<Text style={s.primaryText}>{catalog.saving ? 'Guardando…' : 'Guardar mascota'}</Text>
+        {catalog.saving && <ActivityIndicator color={colors.white} />}<Text style={s.primaryText}>{catalog.saving ? 'Guardando…' : pet ? 'Guardar cambios' : 'Guardar mascota'}</Text>
       </Pressable>
     </View>
   </View>;
