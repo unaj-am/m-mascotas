@@ -1,5 +1,5 @@
 import type { WalkerRequestSummary, WalkerWalkSummary } from '../../../../core/domain/entities/walker-dashboard';
-import { DashboardIcon, type DashboardIconName } from './dashboard-icon';
+import { DashboardIcon, type DashboardIconName } from '../../../../core/ui/dashboard-icon';
 import { colors, styles as s } from '../screens/walker-home.styles';
 import type { WalkExecution } from '../../../walks/presentation/hooks/use-walk-execution';
 import type { WalkAction } from '../../../../core/domain/use-cases/walk-execution-use-cases';

@@ -1,6 +1,6 @@
-import { DashboardAvatar } from './dashboard-shell';
+import { DashboardAvatar } from '../../../../core/ui/dashboard-avatar';
 import { summarizeOwnerDashboard, type OwnerDashboard, type OwnerPetSummary, type OwnerWalkSummary } from '../../../../core/domain/entities/owner-dashboard';
-import { DashboardIcon, type DashboardIconName } from './dashboard-icon';
+import { DashboardIcon, type DashboardIconName } from '../../../../core/ui/dashboard-icon';
 import { colors, styles as s } from '../screens/owner-home.styles';
 import type { BookingRequests } from '../../../walks/presentation/hooks/use-booking-requests';
 import { BookingRequestList } from '../../../walks/presentation/components/booking-request-list';

@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import type { Pet, PetSize } from '../../../../core/domain/entities/pet';
-import { createDashboardStyles, dashboardColors } from '../../../home/presentation/components/dashboard.styles';
+import { createDashboardStyles, dashboardColors } from '../../../../core/ui/dashboard.styles';
 import type { PetCatalog } from '../hooks/use-pets';
 
 const colors = dashboardColors.owner;

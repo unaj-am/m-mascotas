@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import type { WalkerDashboard, WalkerRequestSummary, WalkerWalkSummary } from '../../../../core/domain/entities/walker-dashboard';
 import { summarizeWalkerDashboard } from '../../../../core/domain/entities/walker-dashboard';
-import { DashboardAvatar } from './dashboard-shell';
-import { DashboardIcon, type DashboardIconName } from './dashboard-icon';
+import { DashboardAvatar } from '../../../../core/ui/dashboard-avatar';
+import { DashboardIcon, type DashboardIconName } from '../../../../core/ui/dashboard-icon';
 import { colors, styles as s } from '../screens/walker-home.styles';
 
 import { ActivityIndicator, Pressable, Switch, Text, View } from 'react-native';

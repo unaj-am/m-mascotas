@@ -1,25 +1,17 @@
-import { useEffect, useRef, useState, type ComponentRef, type ReactNode } from 'react';
-import { ActivityIndicator, Image, Pressable, ScrollView, Text, useWindowDimensions, View } from 'react-native';
+import { useEffect, useRef, type ComponentRef, type ReactNode } from 'react';
+import { ActivityIndicator, Pressable, ScrollView, Text, useWindowDimensions, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { useAuthActions } from '../../../../composition/application-provider';
+import { DashboardAvatar } from '../../../../core/ui/dashboard-avatar';
 import { FormMessage } from '../../../../core/ui/auth-card';
 import { useAuthOperation } from '../../../auth/presentation/hooks/use-auth-operation';
-import { DashboardIcon, type DashboardIconName } from './dashboard-icon';
-import { createDashboardStyles, dashboardColors } from './dashboard.styles';
+import { DashboardIcon, type DashboardIconName } from '../../../../core/ui/dashboard-icon';
+import { createDashboardStyles, dashboardColors } from '../../../../core/ui/dashboard.styles';
 
 type Variant = keyof typeof dashboardColors;
 export type DashboardTab<T extends string> = Readonly<{ id: T; label: string; icon: DashboardIconName }>;
 const styles = { owner: createDashboardStyles(dashboardColors.owner), walker: createDashboardStyles(dashboardColors.walker) };
-
-export function DashboardAvatar({ name, uri, variant }: { name: string; uri: string | null; variant: Variant }) {
-  const [failedUri, setFailedUri] = useState<string | null>(null);
-  const s = styles[variant];
-  return <View style={s.profileAvatar}>
-    {uri && failedUri !== uri ? <Image source={{ uri }} accessibilityLabel="Foto de perfil" style={s.image} onError={() => setFailedUri(uri)} />
-      : <Text style={s.profileInitial}>{name.charAt(0).toLocaleUpperCase() || (variant === 'walker' ? 'P' : 'D')}</Text>}
-  </View>;
-}
 
 export function DashboardShell<T extends string>({ variant, tabs, activeTab, onTabChange, name, profileImage, title, subtitle, loading, refreshDisabled = false, onRefresh, children }: {
   variant: Variant; tabs: readonly DashboardTab<T>[]; activeTab: T; onTabChange: (tab: T) => void;

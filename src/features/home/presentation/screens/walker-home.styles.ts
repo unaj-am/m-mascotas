@@ -1,5 +1,5 @@
 import { StyleSheet } from 'react-native';
-import { createDashboardStyles, dashboardColors } from '../components/dashboard.styles';
+import { createDashboardStyles, dashboardColors } from '../../../../core/ui/dashboard.styles';
 
 export const colors = dashboardColors.walker;
 export const styles = {

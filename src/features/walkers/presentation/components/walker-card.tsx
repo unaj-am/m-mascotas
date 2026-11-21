@@ -1,6 +1,6 @@
 import { Pressable, Text, View } from 'react-native';
 import type { Walker } from '../../../../core/domain/entities/walker';
-import { createDashboardStyles, dashboardColors } from '../../../home/presentation/components/dashboard.styles';
+import { createDashboardStyles, dashboardColors } from '../../../../core/ui/dashboard.styles';
 
 const s = createDashboardStyles(dashboardColors.owner);
 
