@@ -1,37 +1,13 @@
-import { useState } from 'react';
 import { useRouter } from 'expo-router';
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { ActionButton, AuthCard, FormMessage, formStyles } from '../../../../core/ui/auth-card';
-import { useAuthActions, useSession } from '../../../../composition/application-provider';
-import type { RegistrationInput, RegistrationReceipt } from '../../../../core/domain/entities/registration';
 import type { UserRole } from '../../../../core/domain/entities/user-role';
-import { useAuthOperation } from '../hooks/use-auth-operation';
+import { useRegistrationForm } from '../hooks/use-registration-form';
 import { SessionScreen } from './session-screen';
 
 export function RegisterScreen() {
-  const auth = useAuthActions();
-  const session = useSession();
   const router = useRouter();
-  const operation = useAuthOperation();
-  const [form, setForm] = useState<RegistrationInput>({
-    name: '', lastName: '', phone: '', email: '', password: '', confirmPassword: '', role: 'OWNER',
-  });
-  const [receipt, setReceipt] = useState<RegistrationReceipt | null>(null);
-  const editable = !operation.busy && session.status === 'signed-out';
-  function update<K extends keyof RegistrationInput>(key: K, value: RegistrationInput[K]) {
-    setForm((previous) => ({ ...previous, [key]: value }));
-  }
-  async function submit() {
-    if (!auth || !editable) return;
-    await operation.run(async () => {
-      const result = await auth.register(form);
-      if (result.ok) {
-        setReceipt(result.value);
-        setForm((previous) => ({ ...previous, password: '', confirmPassword: '' }));
-      }
-      return result;
-    });
-  }
+  const { canSubmit, session, operation, form, receipt, editable, update, submit } = useRegistrationForm();
   if (receipt) return <AuthCard title="Cuenta creada" subtitle={receipt.verificationEmailSent
     ? `Te enviamos un correo a ${receipt.email}. Verificá tu cuenta para poder ingresar.`
     : 'La cuenta y el perfil se guardaron, pero no pudimos enviar el correo de verificación. Podés reenviarlo desde la siguiente pantalla.'}>
@@ -76,7 +52,7 @@ export function RegisterScreen() {
       returnKeyType="go" onSubmitEditing={() => { void submit(); }} />
     <FormMessage message={operation.message} error={operation.isError} />
     <ActionButton title={operation.busy ? 'Creando cuenta…' : 'Crear cuenta'} busy={operation.busy}
-      disabled={!auth || !editable} onPress={() => { void submit(); }} />
+      disabled={!canSubmit} onPress={() => { void submit(); }} />
     <ActionButton title="Volver al ingreso" secondary disabled={operation.busy} onPress={() => router.replace('/')} />
   </AuthCard>;
 }
