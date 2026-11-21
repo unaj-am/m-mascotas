@@ -1,7 +1,7 @@
 import { DashboardShell } from '../components/dashboard-shell';
 import { useState } from 'react';
 import { ActivityIndicator, Pressable, Text, useWindowDimensions, View } from 'react-native';
-import { type DashboardIconName } from '../components/dashboard-icon';
+import { type DashboardIconName } from '../../../../core/ui/dashboard-icon';
 import { useOwnerHomeData } from '../hooks/use-owner-home-data';
 import { colors, styles as s } from './owner-home.styles';
 import { PetsScreen } from '../../../pets/presentation/screens/pets-screen';

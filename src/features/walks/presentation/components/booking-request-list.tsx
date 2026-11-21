@@ -1,6 +1,6 @@
 import { Text, View } from 'react-native';
 import type { WalkRequest } from '../../../../core/domain/entities/walk-request';
-import { createDashboardStyles, dashboardColors } from '../../../home/presentation/components/dashboard.styles';
+import { createDashboardStyles, dashboardColors } from '../../../../core/ui/dashboard.styles';
 
 const s = createDashboardStyles(dashboardColors.owner);
 const labels = { PENDING: 'Pendiente', ACCEPTED: 'Aceptada', REJECTED: 'Rechazada', CANCELLED: 'Cancelada' };

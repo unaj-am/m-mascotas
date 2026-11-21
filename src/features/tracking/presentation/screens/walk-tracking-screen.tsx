@@ -3,7 +3,7 @@ import { ActivityIndicator, Pressable, Text, View } from 'react-native';
 import { useWalkTracking } from '../hooks/use-walk-tracking';
 import { TrackingMap } from '../components/tracking-map';
 import { trackingMapData } from '../state/tracking-map';
-import { createDashboardStyles, dashboardColors } from '../../../home/presentation/components/dashboard.styles';
+import { createDashboardStyles, dashboardColors } from '../../../../core/ui/dashboard.styles';
 import { walkStatusLabels } from '../../../walks/presentation/state/walk-display';
 import { WalkTiming } from '../../../walks/presentation/components/walk-timing';
 

@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Text, View } from 'react-native';
 import { elapsedWalkSeconds, formatWalkElapsed, type WalkTimingData } from '../state/walk-timing';
-import { createDashboardStyles, dashboardColors } from '../../../home/presentation/components/dashboard.styles';
+import { createDashboardStyles, dashboardColors } from '../../../../core/ui/dashboard.styles';
 
 const styles = { owner: createDashboardStyles(dashboardColors.owner), walker: createDashboardStyles(dashboardColors.walker) };
 const label = (value: number) => new Date(value).toLocaleString('es-AR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });

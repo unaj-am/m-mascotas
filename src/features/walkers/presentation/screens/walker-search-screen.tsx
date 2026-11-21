@@ -6,8 +6,8 @@ import { useWalkerSearch } from '../hooks/use-walker-search';
 import { WalkerCard } from '../components/walker-card';
 import { selectWalkers } from '../state/walker-search';
 import { WalkRequestForm, formStyles } from '../components/walk-request-form';
-import { createDashboardStyles, dashboardColors } from '../../../home/presentation/components/dashboard.styles';
-import { DashboardIcon } from '../../../home/presentation/components/dashboard-icon';
+import { createDashboardStyles, dashboardColors } from '../../../../core/ui/dashboard.styles';
+import { DashboardIcon } from '../../../../core/ui/dashboard-icon';
 
 const colors = dashboardColors.owner, s = createDashboardStyles(colors);
 

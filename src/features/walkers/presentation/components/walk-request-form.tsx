@@ -4,7 +4,7 @@ import type { Walker } from '../../../../core/domain/entities/walker';
 import type { PetCatalog } from '../../../pets/presentation/hooks/use-pets';
 import type { WalkerSearch } from '../hooks/use-walker-search';
 import { parseRequestSchedule } from '../../../walks/presentation/state/request-schedule';
-import { createDashboardStyles, dashboardColors } from '../../../home/presentation/components/dashboard.styles';
+import { createDashboardStyles, dashboardColors } from '../../../../core/ui/dashboard.styles';
 
 const colors = dashboardColors.owner, s = createDashboardStyles(colors);
 export const formStyles = StyleSheet.create({

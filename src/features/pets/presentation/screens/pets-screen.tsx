@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { ActivityIndicator, Pressable, Text, View } from 'react-native';
 import type { Pet } from '../../../../core/domain/entities/pet';
-import { DashboardIcon } from '../../../home/presentation/components/dashboard-icon';
-import { createDashboardStyles, dashboardColors } from '../../../home/presentation/components/dashboard.styles';
+import { DashboardIcon } from '../../../../core/ui/dashboard-icon';
+import { createDashboardStyles, dashboardColors } from '../../../../core/ui/dashboard.styles';
 import { PetCard } from '../components/pet-card';
 import { PetForm } from '../components/pet-form';
 import type { PetCatalog } from '../hooks/use-pets';

@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { Image, Pressable, Text, View } from 'react-native';
 import type { Pet, PetSize } from '../../../../core/domain/entities/pet';
-import { DashboardIcon } from '../../../home/presentation/components/dashboard-icon';
-import { createDashboardStyles, dashboardColors } from '../../../home/presentation/components/dashboard.styles';
+import { DashboardIcon } from '../../../../core/ui/dashboard-icon';
+import { createDashboardStyles, dashboardColors } from '../../../../core/ui/dashboard.styles';
 
 const colors = dashboardColors.owner;
 const s = createDashboardStyles(colors);
