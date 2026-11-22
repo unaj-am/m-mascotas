@@ -36,18 +36,17 @@ export function WalkerHomeContent({ data, compact, busy, onAvailabilityChange, n
   data: WalkerDashboard; compact: boolean; busy: boolean; onAvailabilityChange: (value: boolean) => void; navigate: (tab: Tab, filter?: AgendaFilter) => void;
 } & WalkerCardActions) {
   const summary = summarizeWalkerDashboard(data);
-  const stats: readonly { title: string; value: string; tab: Tab; icon: DashboardIconName; rating?: boolean; filter?: AgendaFilter }[] = [
+  const stats: readonly { title: string; value: string; tab: Tab; icon: DashboardIconName; filter?: AgendaFilter }[] = [
     { title: 'Solicitudes pendientes', value: String(summary.pendingCount), tab: 'requests', icon: 'inbox' },
     { title: 'Paseos programados', value: String(summary.scheduledCount), tab: 'agenda', icon: 'calendar', filter: 'scheduled' },
     { title: 'Paseos en curso', value: String(summary.activeCount), tab: 'agenda', icon: 'paw', filter: 'active' },
-    { title: 'Calificación promedio', value: data.rating === null ? 'Sin calificar' : `${data.rating.toLocaleString('es-AR', { minimumFractionDigits: 1, maximumFractionDigits: 1 })} / 5`, tab: 'profile', icon: 'check', rating: true },
   ];
   return <>
     <AvailabilityCard data={data} busy={busy} onChange={onAvailabilityChange} />
     <View><Text accessibilityRole="header" style={s.sectionTitle}>Resumen de actividad</Text><Text style={s.subtitle}>Consultá el estado de tus paseos y solicitudes</Text></View>
     <View style={s.statRows}>{[stats.slice(0, 2), stats.slice(2, 4)].map((row, index) => <View key={index} style={s.stats}>{row.map((stat) =>
       <Pressable key={stat.title} accessibilityRole="button" accessibilityLabel={`${stat.title}: ${stat.value}. Ver detalle`} onPress={() => navigate(stat.tab, stat.filter)} style={({ pressed }) => [s.stat, compact && s.statCompact, pressed && s.muted]}>
-        <View style={s.iconTile}><DashboardIcon name={stat.icon} size={21} color={colors.primary} /></View><Text style={[s.number, stat.rating && s.rating]}>{stat.value}</Text><Text style={s.statLabel}>{stat.title}</Text>
+        <View style={s.iconTile}><DashboardIcon name={stat.icon} size={21} color={colors.primary} /></View><Text style={s.number}>{stat.value}</Text><Text style={s.statLabel}>{stat.title}</Text>
       </Pressable>)}</View>)}</View>
     <View style={s.sectionTop}><View style={{ flex: 1 }}><Text accessibilityRole="header" style={s.sectionTitle}>Solicitudes pendientes</Text>
       <Text style={s.subtitle}>{summary.pendingCount ? `${summary.pendingCount} solicitudes para revisar` : 'No tenés solicitudes nuevas'}</Text></View>
@@ -92,8 +91,7 @@ export function WalkerProfileContent({ data }: { data: WalkerDashboard }) {
     <View style={s.surface}><Text style={s.sectionTitle}>Mi perfil profesional</Text>
       {data.hasWalkerProfile ? <>
         {[['Zona de servicio', data.serviceArea || 'Sin definir'], ['Descripción', data.description || 'Sin informar'],
-          ['Precio por paseo', data.pricePerWalk === null ? 'Sin definir' : data.pricePerWalk.toLocaleString('es-AR', { style: 'currency', currency: 'ARS', maximumFractionDigits: 0 })],
-          ['Calificación', data.rating === null ? 'Sin calificar' : `${data.rating.toLocaleString('es-AR', { maximumFractionDigits: 1 })} / 5`]].map(([label, value]) =>
+          ['Precio por paseo', data.pricePerWalk === null ? 'Sin definir' : data.pricePerWalk.toLocaleString('es-AR', { style: 'currency', currency: 'ARS', maximumFractionDigits: 0 })]].map(([label, value]) =>
           <View key={label}><Text style={s.fieldLabel}>{label}</Text><Text style={s.fieldValue}>{value}</Text></View>)}
       </> : <Text style={s.notice}>Tu cuenta todavía no tiene un perfil profesional. No podés activar la disponibilidad hasta completarlo.</Text>}
     </View>

@@ -11,7 +11,7 @@ function fixture() {
   const updates: { uid: string; available: boolean }[] = [];
   const source: WalkerDashboardDataSource = {
     async getProfile(uid) { uids.push(uid); return { name: 'Luis', role: 'WALKER', active: true, profileImage: 'https://example.com/profile.jpg' }; },
-    async getWalker(uid) { uids.push(uid); return { available: true, rating: 4.7, serviceArea: 'Palermo', pricePerWalk: 5000 }; },
+    async getWalker(uid) { uids.push(uid); return { available: true, serviceArea: 'Palermo', pricePerWalk: 5000 }; },
     async getRequests(uid) { uids.push(uid); return [
       { id: 'pending', data: { walkerId: uid, ownerName: 'Ana', petIds: ['pet-1'], petNames: ['Milo'], status: 'PENDING', scheduledAt: '2027-01-01T10:00:00Z', durationMinutes: 30 } },
       { id: 'accepted', data: { walkerId: uid, petIds: ['pet-1'], petNames: ['Milo'], status: 'ACCEPTED' } },
@@ -39,7 +39,6 @@ it('carga solo datos del paseador conectado y reproduce los indicadores del nati
     assert.equal(summary.pendingCount, 1);
     assert.equal(summary.scheduledCount, 1);
     assert.equal(summary.activeCount, 1);
-    assert.equal(summary.rating, 4.7);
     assert.equal(result.value.requests[0]?.scheduledAt, Date.parse('2027-01-01T10:00:00Z'));
     assert.deepEqual(result.value.walks.find((walk) => walk.id === 'scheduled')?.petNames, ['Milo']);
   }
@@ -73,7 +72,6 @@ it('admite una cuenta nueva sin perfil profesional pero no permite activar su di
   if (result.ok) {
     assert.equal(result.value.hasWalkerProfile, false);
     assert.equal(result.value.available, false);
-    assert.equal(result.value.rating, null);
   }
   const update = await f.actions.updateAvailability(session, true);
   assert.equal(update.ok, false);
@@ -115,14 +113,8 @@ it('no inventa contadores vacíos cuando falla la carga de las solicitudes', asy
   if (!result.ok) assert.equal(result.error.code, 'unavailable');
 });
 
-it('valida la calificación y el tipo de disponibilidad sin modificar datos inválidos', async () => {
-  for (const rating of [null, -1, 10]) {
-    const f = fixture();
-    f.source.getWalker = async () => ({ available: false, rating });
-    const result = await f.actions.getDashboard(session);
-    assert.equal(result.ok, true);
-    if (result.ok) assert.equal(result.value.rating, null);
-    assert.equal((await f.actions.updateAvailability(session, 'true' as unknown as boolean)).ok, false);
-    assert.equal(f.updates.length, 0);
-  }
+it('rechaza un valor de disponibilidad que no sea booleano sin guardar cambios', async () => {
+  const f = fixture();
+  assert.equal((await f.actions.updateAvailability(session, 'true' as unknown as boolean)).ok, false);
+  assert.equal(f.updates.length, 0);
 });
