@@ -13,7 +13,7 @@ export type WalkerWalkSummary = Readonly<{
 }>;
 export type WalkerDashboard = Readonly<{
   name: string; lastName: string; email: string; phone: string; profileImage: string | null;
-  hasWalkerProfile: boolean; available: boolean; rating: number | null; serviceArea: string;
+  hasWalkerProfile: boolean; available: boolean; serviceArea: string;
   description: string; pricePerWalk: number | null;
   requests: readonly WalkerRequestSummary[]; walks: readonly WalkerWalkSummary[];
 }>;
@@ -24,6 +24,5 @@ export function summarizeWalkerDashboard(data: WalkerDashboard) {
     pendingCount: pending.length,
     scheduledCount: data.walks.filter((walk) => walk.status === 'SCHEDULED').length,
     activeCount: data.walks.filter((walk) => walk.status === 'IN_PROGRESS').length,
-    rating: data.rating,
   };
 }

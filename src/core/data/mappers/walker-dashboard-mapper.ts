@@ -40,11 +40,10 @@ export function toWalkerDashboard(
   rawWalks: readonly DashboardDocument[],
 ): WalkerDashboard {
   const walker = rawWalker === null ? null : record(rawWalker);
-  const rating = nonnegative(walker?.rating);
   const requests = rawRequests.map((document) => request(document, uid)).sort((a, b) => (a.scheduledAt ?? Infinity) - (b.scheduledAt ?? Infinity));
   return {
     name: text(profile.name), lastName: text(profile.lastName), email: text(profile.email), phone: text(profile.phone), profileImage: imageUrl(profile.profileImage),
-    hasWalkerProfile: walker !== null, available: walker?.available === true, rating: rating !== null && rating <= 5 ? rating : null,
+    hasWalkerProfile: walker !== null, available: walker?.available === true,
     serviceArea: text(walker?.serviceArea), description: text(walker?.description), pricePerWalk: nonnegative(walker?.pricePerWalk),
     requests, walks: rawWalks.map((document) => walk(document, uid, requests)).sort((a, b) => (a.scheduledAt ?? Infinity) - (b.scheduledAt ?? Infinity)),
   };
