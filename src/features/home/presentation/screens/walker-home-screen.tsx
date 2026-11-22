@@ -32,8 +32,7 @@ export function WalkerHomeScreen() {
   const title = tab === 'home' ? `Hola, ${data?.name || 'paseador'}` : tab === 'requests' ? 'Mis solicitudes' : tab === 'agenda' ? 'Mi agenda' : 'Mi perfil';
   const subtitle = { home: 'Este es el resumen de tu actividad.', requests: 'Revisá las solicitudes de paseo que recibiste.', agenda: 'Organizá tus paseos y consultá tu historial.', profile: 'Tus datos de contacto y tu perfil profesional.' }[tab];
   return <DashboardShell variant="walker" tabs={tabs} activeTab={tab} onTabChange={setTab} name={data?.name || ''}
-    profileImage={data?.profileImage ?? null} title={title} subtitle={subtitle} loading={tab === 'requests' ? incoming.state.status === 'loading' : tab === 'agenda' ? walks.state.status === 'loading' : state.status === 'loading'}
-    refreshDisabled={availability.busy || execution.operation.busy} onRefresh={() => { incoming.retry(); walks.retry(); void reload(); }}>
+    profileImage={data?.profileImage ?? null} title={title} subtitle={subtitle}>
     {profileDependent && state.status === 'loading' && <View style={[s.surface, s.busySurface]}><ActivityIndicator color={colors.primary} /><Text accessibilityLiveRegion="polite" style={s.busyText}>Cargando tu actividad…</Text></View>}
     {profileDependent && state.status === 'error' && <View style={s.surface}><Text style={s.emptyTitleLeft}>No pudimos cargar tu inicio</Text><Text style={s.subtitle}>{state.message}</Text>
       <Pressable accessibilityRole="button" onPress={() => { void reload(); }} style={[s.button, s.primary]}><Text style={s.primaryText}>Volver a intentar</Text></Pressable>

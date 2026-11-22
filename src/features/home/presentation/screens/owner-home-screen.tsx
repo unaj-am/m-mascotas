@@ -23,7 +23,7 @@ export function OwnerHomeScreen() {
   const [walkFilter, setWalkFilter] = useState<OwnerWalkFilter>('ALL');
   const { state, reload, pets, requests, walks, data } = useOwnerHomeData();
   const [requestSent, setRequestSent] = useState(false);
-  const [trackingId, setTrackingId] = useState<string | null>(null), [trackingAttempt, setTrackingAttempt] = useState(0);
+  const [trackingId, setTrackingId] = useState<string | null>(null);
   const name = data?.name || '';
   function navigate(next: Tab) { setTab(next); }
   function search() { setRequestSent(false); navigate('walkers'); }
@@ -39,11 +39,10 @@ export function OwnerHomeScreen() {
     tracking: 'La ubicación y el recorrido compartidos por el paseador.',
   }[tab];
   return <DashboardShell variant="owner" tabs={tabs} activeTab={tab} onTabChange={navigate}
-    name={name} profileImage={data?.profileImage ?? null} title={title} subtitle={description}
-    loading={tab === 'pets' ? pets.state.status === 'loading' : tab === 'walks' ? walks.state.status === 'loading' : !independent && state.status === 'loading'} refreshDisabled={tab === 'walkers'} onRefresh={() => { if (tab === 'tracking') setTrackingAttempt((value) => value + 1); else if (tab === 'pets') pets.retry(); else { pets.retry(); requests.retry(); walks.retry(); void reload(); } }}>
+    name={name} profileImage={data?.profileImage ?? null} title={title} subtitle={description}>
     {tab === 'pets' && <PetsScreen key={pets.uid} catalog={pets} />}
     {tab === 'walkers' && <WalkerSearchScreen key={pets.uid} pets={pets} onBack={() => navigate('home')} onPets={() => navigate('pets')} onSent={() => { setRequestSent(true); navigate('walks'); }} />}
-    {tab === 'tracking' && trackingId && <WalkTrackingScreen key={`${pets.uid}:${trackingId}:${trackingAttempt}`} id={trackingId} onBack={() => navigate('walks')} />}
+    {tab === 'tracking' && trackingId && <WalkTrackingScreen key={`${pets.uid}:${trackingId}`} id={trackingId} onBack={() => navigate('walks')} />}
     {tab === 'walks' && <>
       <Pressable accessibilityRole="button" onPress={search} style={[s.button, s.primary]}><Text style={s.primaryText}>Buscar paseador</Text></Pressable>
       {requestSent && <Text accessibilityLiveRegion="polite" style={[s.notice, { color: colors.primaryDark }]}>Tu solicitud se envió correctamente.</Text>}

@@ -13,10 +13,9 @@ type Variant = keyof typeof dashboardColors;
 export type DashboardTab<T extends string> = Readonly<{ id: T; label: string; icon: DashboardIconName }>;
 const styles = { owner: createDashboardStyles(dashboardColors.owner), walker: createDashboardStyles(dashboardColors.walker) };
 
-export function DashboardShell<T extends string>({ variant, tabs, activeTab, onTabChange, name, profileImage, title, subtitle, loading, refreshDisabled = false, onRefresh, children }: {
+export function DashboardShell<T extends string>({ variant, tabs, activeTab, onTabChange, name, profileImage, title, subtitle, children }: {
   variant: Variant; tabs: readonly DashboardTab<T>[]; activeTab: T; onTabChange: (tab: T) => void;
-  name: string; profileImage: string | null; title: string; subtitle: string; loading: boolean;
-  refreshDisabled?: boolean; onRefresh: () => void; children: ReactNode;
+  name: string; profileImage: string | null; title: string; subtitle: string; children: ReactNode;
 }) {
   const { width } = useWindowDimensions();
   const compact = width < 760;
@@ -54,17 +53,11 @@ export function DashboardShell<T extends string>({ variant, tabs, activeTab, onT
           <Text accessibilityRole="header" numberOfLines={home ? 1 : undefined} style={[s.heading, compact && s.headingCompact]}>{title}</Text>
           <Text style={[s.subtitle, compact && s.subtitleCompact]}>{subtitle}</Text>
         </View>
-        {!home && <Pressable accessibilityRole="button" accessibilityLabel="Actualizar mis datos" disabled={loading || refreshDisabled} onPress={onRefresh} style={s.refresh}>
-          {loading ? <ActivityIndicator color={colors.primary} /> : <DashboardIcon name="refresh" color={colors.primary} size={24} />}
-        </Pressable>}
       </View>
       {operation.message && <View style={s.error}><FormMessage message={operation.message} error={operation.isError} /></View>}
       {children}
       {activeTab === 'profile' && <Pressable accessibilityRole="button" disabled={!auth || operation.busy} accessibilityState={{ disabled: !auth || operation.busy, busy: operation.busy }} onPress={logout}
         style={[s.button, s.primary, operation.busy && s.muted]}>{operation.busy && <ActivityIndicator color={colors.white} />}<Text style={s.primaryText}>{operation.busy ? 'Cerrando sesión…' : 'Cerrar sesión'}</Text></Pressable>}
-      {home && !loading && <View style={s.footer}><Pressable accessibilityRole="button" disabled={refreshDisabled} onPress={onRefresh} style={[s.textLink, refreshDisabled && s.muted]}>
-        <Text style={s.textLinkLabel}>Actualizar mi actividad</Text><DashboardIcon name="refresh" color={colors.primary} size={18} />
-      </Pressable></View>}
     </ScrollView>
     {!desktop && <View style={s.bottomNav}>{tabs.map((tab) => <Pressable key={tab.id} accessibilityRole="button" accessibilityLabel={tab.label} accessibilityState={{ selected: tab.id === activeTab }}
       onPress={() => navigate(tab.id)} style={[s.bottomItem, tab.id === activeTab && s.navSelected]}>
