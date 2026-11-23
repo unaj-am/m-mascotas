@@ -94,6 +94,12 @@ Las reglas de Firestore deben permitir a cada cuenta nueva consultar y crear su 
 
 ## Ejecución
 
+### Ícono de Mascotas
+
+Guardá el ícono definitivo como `assets/icon.png`, reemplazando la imagen provisional. Usá un PNG cuadrado de 1024 × 1024 píxeles. La configuración de `app.json` usa ese mismo archivo para el ícono de Android y el favicon web.
+
+Para ver el favicon, reiniciá Expo y recargá la página. Para aplicar el ícono a una carpeta `android/` válida que ya existe, ejecutá `npx expo prebuild --platform android --no-clean --no-install` y después compilá e instalá con `npm run android`.
+
 ### Android
 
 Generar e instalar la versión de desarrollo en un dispositivo o emulador:
