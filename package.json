@@ -29,6 +29,7 @@
     "expo-status-bar": "~58.0.4",
     "expo-task-manager": "~58.0.13",
     "firebase": "^13.1.0",
+    "inversify": "7.11.0",
     "react": "19.3.0",
     "react-dom": "19.3.0",
     "react-native": "0.88.1",

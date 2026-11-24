@@ -1,3 +1,4 @@
+import { Container } from 'inversify';
 import { AuthRepositoryImpl } from '../core/data/repositories/auth-repository-impl';
 import type { AuthDataSource } from '../core/data/datasources/auth-data-source';
 import { createObserveSession } from '../core/domain/use-cases/observe-session';
@@ -18,17 +19,70 @@ import { createWalkExecutionUseCases } from '../core/domain/use-cases/walk-execu
 import type { WalkLocationRepository } from '../core/domain/repositories/walk-location-repository';
 import type { LocationCaptureRepository } from '../core/domain/repositories/location-capture-repository';
 import { createWalkTrackingUseCases } from '../core/domain/use-cases/walk-tracking-use-cases';
+
+const sources = {
+  auth: Symbol('AuthDataSource'),
+  owner: Symbol('OwnerDashboardDataSource'),
+  walker: Symbol('WalkerDashboardDataSource'),
+  pets: Symbol('PetDataSource'),
+  booking: Symbol('WalkBookingDataSource'),
+  locations: Symbol('WalkLocationRepository'),
+  capture: Symbol('LocationCaptureRepository'),
+};
+const useCases = {
+  observeSession: Symbol('ObserveSession'),
+  auth: Symbol('AuthUseCases'),
+  owner: Symbol('GetOwnerDashboard'),
+  walker: Symbol('WalkerDashboardUseCases'),
+  pets: Symbol('PetUseCases'),
+  booking: Symbol('WalkBookingUseCases'),
+  execution: Symbol('WalkExecutionUseCases'),
+  tracking: Symbol('WalkTrackingUseCases'),
+};
+
 export function createApplication(authSource: AuthDataSource, ownerSource?: OwnerDashboardDataSource, walkerSource?: WalkerDashboardDataSource, petSource?: PetDataSource, bookingSource?: WalkBookingDataSource, locations?: WalkLocationRepository, capture?: LocationCaptureRepository) {
-  const auth = new AuthRepositoryImpl(authSource);
-  const booking = bookingSource ? new WalkBookingRepositoryImpl(bookingSource) : null;
+  const container = new Container({ defaultScope: 'Singleton' });
+  container.bind<AuthDataSource>(sources.auth).toConstantValue(authSource);
+  container.bind(AuthRepositoryImpl).toResolvedValue((source: AuthDataSource) => new AuthRepositoryImpl(source), [sources.auth]);
+  container.bind(useCases.observeSession).toResolvedValue(createObserveSession, [AuthRepositoryImpl]);
+  container.bind(useCases.auth).toResolvedValue(createAuthUseCases, [AuthRepositoryImpl]);
+
+  if (ownerSource) {
+    container.bind<OwnerDashboardDataSource>(sources.owner).toConstantValue(ownerSource);
+    container.bind(OwnerDashboardRepositoryImpl).toResolvedValue((source: OwnerDashboardDataSource) => new OwnerDashboardRepositoryImpl(source), [sources.owner]);
+    container.bind(useCases.owner).toResolvedValue(createGetOwnerDashboard, [OwnerDashboardRepositoryImpl]);
+  }
+  if (walkerSource) {
+    container.bind<WalkerDashboardDataSource>(sources.walker).toConstantValue(walkerSource);
+    container.bind(WalkerDashboardRepositoryImpl).toResolvedValue((source: WalkerDashboardDataSource) => new WalkerDashboardRepositoryImpl(source), [sources.walker]);
+    container.bind(useCases.walker).toResolvedValue(createWalkerDashboardUseCases, [WalkerDashboardRepositoryImpl]);
+  }
+  if (petSource) {
+    container.bind<PetDataSource>(sources.pets).toConstantValue(petSource);
+    container.bind(PetRepositoryImpl).toResolvedValue((source: PetDataSource) => new PetRepositoryImpl(source), [sources.pets]);
+    container.bind(useCases.pets).toResolvedValue(createPetUseCases, [PetRepositoryImpl]);
+  }
+  if (bookingSource) {
+    container.bind<WalkBookingDataSource>(sources.booking).toConstantValue(bookingSource);
+    container.bind(WalkBookingRepositoryImpl).toResolvedValue((source: WalkBookingDataSource) => new WalkBookingRepositoryImpl(source), [sources.booking]);
+    container.bind(useCases.booking).toResolvedValue((repo: WalkBookingRepositoryImpl) => createWalkBookingUseCases(repo), [WalkBookingRepositoryImpl]);
+    container.bind(useCases.execution).toResolvedValue(createWalkExecutionUseCases, [WalkBookingRepositoryImpl]);
+  }
+  if (locations && capture) {
+    container.bind<WalkLocationRepository>(sources.locations).toConstantValue(locations);
+    container.bind<LocationCaptureRepository>(sources.capture).toConstantValue(capture);
+    container.bind(useCases.tracking).toResolvedValue(createWalkTrackingUseCases, [sources.locations, sources.capture]);
+  }
+
   return {
-    observeSession: createObserveSession(auth), auth: createAuthUseCases(auth),
-    getOwnerDashboard: ownerSource ? createGetOwnerDashboard(new OwnerDashboardRepositoryImpl(ownerSource)) : null,
-    walkerDashboard: walkerSource ? createWalkerDashboardUseCases(new WalkerDashboardRepositoryImpl(walkerSource)) : null,
-    pets: petSource ? createPetUseCases(new PetRepositoryImpl(petSource)) : null,
-    booking: booking ? createWalkBookingUseCases(booking) : null,
-    walkExecution: booking ? createWalkExecutionUseCases(booking) : null,
-    tracking: locations && capture ? createWalkTrackingUseCases(locations, capture) : null,
+    observeSession: container.get<ReturnType<typeof createObserveSession>>(useCases.observeSession),
+    auth: container.get<ReturnType<typeof createAuthUseCases>>(useCases.auth),
+    getOwnerDashboard: container.get<ReturnType<typeof createGetOwnerDashboard>>(useCases.owner, { optional: true }) ?? null,
+    walkerDashboard: container.get<ReturnType<typeof createWalkerDashboardUseCases>>(useCases.walker, { optional: true }) ?? null,
+    pets: container.get<ReturnType<typeof createPetUseCases>>(useCases.pets, { optional: true }) ?? null,
+    booking: container.get<ReturnType<typeof createWalkBookingUseCases>>(useCases.booking, { optional: true }) ?? null,
+    walkExecution: container.get<ReturnType<typeof createWalkExecutionUseCases>>(useCases.execution, { optional: true }) ?? null,
+    tracking: container.get<ReturnType<typeof createWalkTrackingUseCases>>(useCases.tracking, { optional: true }) ?? null,
   };
 }
 export type Application = ReturnType<typeof createApplication>;
